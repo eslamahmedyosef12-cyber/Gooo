@@ -433,6 +433,7 @@ function openSub(id){
    <div class="shead"><h2>${s.n}</h2><div class="meta">${s.h} • الترم الأول ٢٠٢٦/٢٠٢٧ • محتوى مطابق للمقرر الرسمي</div>
    <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim)"><span>تقدمك في المادة</span><span>${done}/${total} أجزاء • ${pct}%</span></div>
    <div style="height:8px;background:var(--track);border-radius:99px;margin-top:5px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:99px;transition:width .5s"></div></div></div></div>
+   ${['tafsir','hadith','tawhid','fiqh','thaqafa'].includes(id)?`<a class="tab on" style="display:inline-block;margin:10px 0 0;text-decoration:none" href="pdf/azhar-${id}.pdf" target="_blank" rel="noopener">📄 تحميل ملخص PDF</a>`:''}
    <div class="tabs">
      <button class="tab on" id="t1" onclick="tab('${id}',1)">الشرح والاختبارات</button>
      <button class="tab" id="t2" onclick="tab('${id}',2)">الامتحان الشامل</button>
