@@ -1,0 +1,36 @@
+name: standby-bot
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: standby-bot
+  cancel-in-progress: false
+jobs:
+  standby:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: standby
+      - name: prepare
+        run: |
+          sudo mkdir -p /home/sandbox/tnzl-bot/appcache /home/sandbox/.vault/t
+          sudo chown -R "$USER" /home/sandbox
+          cp standby/bot.py /home/sandbox/tnzl-bot/bot.py
+          pip install --quiet yt-dlp
+      - name: run standby bot
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          SB_ANON: ${{ secrets.SB_ANON }}
+          BOT_SECRET: ${{ secrets.BOT_SECRET }}
+          SB_SERVICE: ${{ secrets.SB_SERVICE }}
+        run: |
+          umask 077
+          printf %s "$TG_TOKEN" > /home/sandbox/.vault/t/token
+          printf %s "$SB_ANON" > /home/sandbox/.sb_anon
+          printf %s "$BOT_SECRET" > /home/sandbox/tnzl-bot/.bot_secret
+          printf %s "$SB_SERVICE" > /home/sandbox/tnzl-bot/.sb_service
+          cd /home/sandbox/tnzl-bot
+          STANDBY=1 TOKEN_FILE=/home/sandbox/.vault/t/token timeout 21000 python3 bot.py >/dev/null 2>&1 || true
