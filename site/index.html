@@ -10,7 +10,7 @@ body{margin:0;background:radial-gradient(900px 500px at 50% -150px,#17482f,var(-
 main{max-width:640px;margin:auto;padding:22px 16px 60px}
 header{text-align:center;padding:26px 0 8px}
 .bis{color:var(--g2);font-size:17px}
-h1{margin:4px 0 0;font-size:44px;letter-spacing:-1px}
+h1{margin:4px 0 0;font-size:52px;letter-spacing:-1px;background:linear-gradient(135deg,#eaffef,#5fd1a0 60%,#2e8b62);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px #2e8b6255)}
 .lead{color:var(--m);margin:0 0 14px}
 .paste{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 10px 40px #0007}
 .paste input{width:100%;padding:16px;border-radius:14px;border:1px solid #2b5f45;background:#0a140f;color:var(--t);font-size:16px;direction:ltr;outline:none}
@@ -31,6 +31,13 @@ h1{margin:4px 0 0;font-size:44px;letter-spacing:-1px}
 .btn.alt{background:#1d3a2a}
 .n{color:var(--m);font-size:14px}code{direction:ltr;unicode-bidi:embed;word-break:break-all;color:#bfe9d3;font-size:12px}
 ol,ul{padding-right:22px;margin:6px 0}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 #2e8b6255}50%{box-shadow:0 0 24px 4px #2e8b6240}}
+header,.paste,.card{animation:up .6s ease both}.card:nth-of-type(2){animation-delay:.1s}.card:nth-of-type(3){animation-delay:.18s}.card:nth-of-type(4){animation-delay:.26s}
+.go{animation:glow 3.2s ease-in-out infinite;transition:transform .12s}.go:active{transform:scale(.98)}
+.bis{letter-spacing:.5px}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(500px 300px at 10% 90%,#1f6b4a22,transparent),radial-gradient(400px 300px at 95% 20%,#5fd1a01a,transparent);pointer-events:none;z-index:-1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
 footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
 </style></head><body><main>
 <header><div class="bis">صلِّ على النبي 🤍</div><h1>تنزيل</h1><p class="lead">الصق الرابط، واختار تنزّله إزاي.</p></header>
