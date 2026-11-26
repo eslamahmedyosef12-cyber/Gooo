@@ -639,11 +639,11 @@ APP_KB = {'inline_keyboard': [
     [{'text': '📥 حمّل تطبيق تنزيل', 'callback_data': 'g|app'}],
     [{'text': '📜 تنزيلاتي', 'callback_data': 'g|hist'}, {'text': '📊 إحصائياتي', 'callback_data': 'g|stats'}],
     [{'text': '🔗 ربط التطبيق', 'callback_data': 'g|link'}, {'text': '❓ مساعدة', 'callback_data': 'g|help'}],
-    [{'text': '👤 المطوّر', 'callback_data': 'g|dev'}]]}
+    [{'text': '🌐 الموقع', 'url': 'https://eslamahmedyosef12-cyber.github.io/Gooo/site/'}, {'text': '👤 المطوّر', 'callback_data': 'g|dev'}]]}
 DEV_TXT = '👤 المطوّر\n\n༺ الـمـصـري ⦓Goo⦔ ༻\nالمطوّر وصاحب المشروع\n\nمطوّر مصري بيحب التكنولوجيا والذكاء الاصطناعي، وصاحب مشروع «تنزيل». شغله كله على تطبيقات بسيطة وقوية تسهّل حياة الناس، وتجمع بين فكرة جديدة وسهولة في الاستخدام.\n\nصلِّ على النبي يا صاحبي 🤍'
 DEV_KB = {'inline_keyboard': [[{'text': '💬 واتساب', 'url': 'https://wa.me/201144864084'}, {'text': '✈️ تليجرام', 'url': 'https://t.me/Gx_o5'}]]}
 START_TXT = ('ابعتلي أي رابط فيديو وأنا أجيبهولك 🎬\n\n🎵 تيك توك  ·  📸 إنستجرام  ·  📘 فيسبوك  ·  𝕏 إكس\n'
-             '▶️ يوتيوب: بضغطة واحدة يفتح في التطبيق\n\nوالباقي من الأزرار اللي تحت 👇\n\nالمطوّر: الـمـصـري Goo · /dev')
+             '▶️ يوتيوب: بضغطة واحدة يفتح في التطبيق\n\nوالباقي من الأزرار اللي تحت 👇\n\n🌐 الموقع: eslamahmedyosef12-cyber.github.io/Gooo/site\nالمطوّر: الـمـصـري Goo · /dev')
 
 
 def send_to_app(chat, jid):
