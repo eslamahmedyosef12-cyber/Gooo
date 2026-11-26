@@ -638,9 +638,12 @@ WELCOME = ('صلِّ على النبي يا صاحبي 🤍\n\nأهلًا بيك
 APP_KB = {'inline_keyboard': [
     [{'text': '📥 حمّل تطبيق تنزيل', 'callback_data': 'g|app'}],
     [{'text': '📜 تنزيلاتي', 'callback_data': 'g|hist'}, {'text': '📊 إحصائياتي', 'callback_data': 'g|stats'}],
-    [{'text': '🔗 ربط التطبيق', 'callback_data': 'g|link'}, {'text': '❓ مساعدة', 'callback_data': 'g|help'}]]}
+    [{'text': '🔗 ربط التطبيق', 'callback_data': 'g|link'}, {'text': '❓ مساعدة', 'callback_data': 'g|help'}],
+    [{'text': '👤 المطوّر', 'callback_data': 'g|dev'}]]}
+DEV_TXT = '👤 المطوّر\n\n༺ الـمـصـري ⦓Goo⦔ ༻\nالمطوّر وصاحب المشروع\n\nمطوّر مصري بيحب التكنولوجيا والذكاء الاصطناعي، وصاحب مشروع «تنزيل». شغله كله على تطبيقات بسيطة وقوية تسهّل حياة الناس، وتجمع بين فكرة جديدة وسهولة في الاستخدام.\n\nصلِّ على النبي يا صاحبي 🤍'
+DEV_KB = {'inline_keyboard': [[{'text': '💬 واتساب', 'url': 'https://wa.me/201144864084'}, {'text': '✈️ تليجرام', 'url': 'https://t.me/Gx_o5'}]]}
 START_TXT = ('ابعتلي أي رابط فيديو وأنا أجيبهولك 🎬\n\n🎵 تيك توك  ·  📸 إنستجرام  ·  📘 فيسبوك  ·  𝕏 إكس\n'
-             '▶️ يوتيوب: بضغطة واحدة يفتح في التطبيق\n\nوالباقي من الأزرار اللي تحت 👇')
+             '▶️ يوتيوب: بضغطة واحدة يفتح في التطبيق\n\nوالباقي من الأزرار اللي تحت 👇\n\nالمطوّر: الـمـصـري Goo · /dev')
 
 
 def send_to_app(chat, jid):
@@ -674,9 +677,9 @@ def handle(u):
             set_user(cid, '', True)
             send(cid, 'تمام 🤍 ' + START_TXT + '\n\nولو حبيت تسجّل اسمك بعدين: /name اسمك', APP_KB)
             return
-        if len(parts) == 2 and parts[0] == 'g' and parts[1] in ('hist', 'stats', 'help', 'link'):
+        if len(parts) == 2 and parts[0] == 'g' and parts[1] in ('hist', 'stats', 'help', 'link', 'dev'):
             mm = q['message']
-            cmd = {'hist': '/history', 'stats': '/stats', 'help': '/help', 'link': '/link'}[parts[1]]
+            cmd = {'hist': '/history', 'stats': '/stats', 'help': '/help', 'link': '/link', 'dev': '/dev'}[parts[1]]
             handle({'message': {'chat': mm['chat'], 'text': cmd}})
             return
         if len(parts) == 2 and parts[0] == 'g' and parts[1] == 'app':
@@ -734,6 +737,9 @@ def handle(u):
             return
         PENDING.discard(chat)
         send(chat, f'تشرّفنا يا {nm} 🤍' if set_user(chat, nm) else 'مقدرتش أحفظ الاسم دلوقتي، جرّب بعد شوية.')
+        return
+    if text.startswith('/dev'):
+        send(chat, DEV_TXT, DEV_KB)
         return
     if text.startswith('/app'):
         safe_submit(send_app, chat)
@@ -917,7 +923,7 @@ def main():
         threading.Thread(target=heartbeat, daemon=True).start()
         threading.Thread(target=web_worker, daemon=True).start()
     api('setMyCommands', {'commands': [{'command': 'start', 'description': 'القائمة'}, {'command': 'app', 'description': 'حمّل تطبيق تنزيل'},
-        {'command': 'history', 'description': 'تنزيلاتي'}, {'command': 'link', 'description': 'ربط التطبيق'}, {'command': 'help', 'description': 'مساعدة'}]})
+        {'command': 'history', 'description': 'تنزيلاتي'}, {'command': 'dev', 'description': 'المطوّر'}, {'command': 'link', 'description': 'ربط التطبيق'}, {'command': 'help', 'description': 'مساعدة'}]})
     me = api('getMe')
     log('bot', (me.get('result') or {}).get('username'))
     off = 0
