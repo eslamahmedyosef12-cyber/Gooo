@@ -1,47 +1,67 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>تنزيل | حمّل الفيديوهات ببساطة</title>
 <meta name="description" content="الصق الرابط واختار: حمّل في المتصفح، ابعته للبوت، أو افتحه في التطبيق. مجاني بدون تتبع.">
-<meta name="theme-color" content="#0b1510">
+<meta name="theme-color" content="#07110c">
 <style>
-:root{--bg:#0a140f;--card:#10201a;--line:#1c3a2b;--g:#2e8b62;--g2:#5fd1a0;--t:#eef7f1;--m:#9ab7a7}
+:root{--bg:#07110c;--card:#0f1d16cc;--line:#ffffff14;--g:#2e8b62;--g2:#5fd1a0;--g3:#a8f0cb;--t:#eef7f1;--m:#9ab7a7;--r:22px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:radial-gradient(900px 500px at 50% -150px,#17482f,var(--bg));color:var(--t);font-family:"Segoe UI",Tahoma,Arial,sans-serif;line-height:1.75;min-height:100vh}
-main{max-width:640px;margin:auto;padding:22px 16px 60px}
-header{text-align:center;padding:26px 0 8px}
-.bis{color:var(--g2);font-size:17px}
-h1{margin:4px 0 0;font-size:52px;letter-spacing:-1px;background:linear-gradient(135deg,#eaffef,#5fd1a0 60%,#2e8b62);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px #2e8b6255)}
-.lead{color:var(--m);margin:0 0 14px}
-.paste{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 10px 40px #0007}
-.paste input{width:100%;padding:16px;border-radius:14px;border:1px solid #2b5f45;background:#0a140f;color:var(--t);font-size:16px;direction:ltr;outline:none}
-.paste input:focus{border-color:var(--g2)}
-.go{width:100%;margin-top:10px;background:linear-gradient(135deg,var(--g),#1f6b4a);color:#fff;border:0;border-radius:14px;padding:15px;font-size:18px;font-weight:700;cursor:pointer}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--t);font-family:"Noto Sans Arabic","Segoe UI",Tahoma,system-ui,Arial,sans-serif;line-height:1.8;min-height:100vh;overflow-x:hidden}
+.orb{position:fixed;border-radius:50%;filter:blur(70px);opacity:.5;z-index:-1;pointer-events:none;animation:float 14s ease-in-out infinite}
+.o1{width:340px;height:340px;background:#1f6b4a;top:-120px;right:-80px}
+.o2{width:300px;height:300px;background:#0f8f78;bottom:8%;left:-110px;animation-delay:-6s;opacity:.35}
+.o3{width:220px;height:220px;background:#2e8b62;top:45%;right:-90px;animation-delay:-10s;opacity:.25}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,26px)}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes glow{0%,100%{box-shadow:0 8px 24px #2e8b6240}50%{box-shadow:0 8px 34px 4px #2e8b6275}}
+@keyframes shine{to{background-position:200% center}}
+main{max-width:640px;margin:auto;padding:18px 16px calc(60px + env(safe-area-inset-bottom))}
+header{text-align:center;padding:30px 0 10px}
+.bis{color:var(--g2);font-size:16px;letter-spacing:.4px;animation:up .6s ease both}
+.logo{width:84px;height:84px;margin:14px auto 4px;border-radius:26px;background:linear-gradient(145deg,#5fd1a0,#1f6b4a);display:grid;place-items:center;box-shadow:0 14px 40px #2e8b6255,inset 0 1px 0 #ffffff55;animation:up .7s ease both,glow 4s ease-in-out infinite}
+h1{margin:6px 0 0;font-size:54px;line-height:1.2;font-weight:900;letter-spacing:-1px;background:linear-gradient(110deg,#eaffef,#5fd1a0,#a8f0cb,#2e8b62);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:up .8s ease both,shine 6s linear infinite}
+.lead{color:var(--m);margin:2px 0 14px;font-size:17px;animation:up .9s ease both}
+.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:6px;animation:up 1s ease both}
+.badges span{background:#ffffff0d;border:1px solid var(--line);color:var(--g3);border-radius:30px;padding:3px 13px;font-size:13px}
+.paste,.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin:16px 0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 44px #0006;animation:up .7s ease both}
+.paste{padding:16px;border-color:#5fd1a033}
+.paste input{width:100%;padding:17px;border-radius:16px;border:1px solid #2b5f45;background:#06100b;color:var(--t);font-size:16px;direction:ltr;text-align:left;unicode-bidi:plaintext;outline:none;transition:border-color .2s,box-shadow .2s}
+.paste input:focus{border-color:var(--g2);box-shadow:0 0 0 4px #5fd1a022}
+.go{width:100%;margin-top:10px;background:linear-gradient(135deg,var(--g),#1f6b4a);color:#fff;border:0;border-radius:16px;padding:16px;font-size:19px;font-weight:800;cursor:pointer;animation:glow 3.2s ease-in-out infinite;transition:transform .12s;font-family:inherit}
+.go:active{transform:scale(.98)}
 .msg{color:var(--m);font-size:14px;margin:8px 2px 0;min-height:20px}
-.chip{display:inline-block;background:#173a2a;color:var(--g2);border-radius:20px;padding:2px 12px;font-size:14px;margin-bottom:6px}
-#choices{display:none;margin-top:14px}
-.ch{display:flex;align-items:center;gap:14px;width:100%;text-align:right;background:var(--card);border:1px solid var(--line);color:var(--t);border-radius:18px;padding:16px;margin:10px 0;font-size:17px;cursor:pointer;text-decoration:none;transition:transform .12s,border-color .12s}
-.ch:hover,.ch:active{transform:translateY(-2px);border-color:var(--g2)}
-.ch .i{font-size:30px}.ch b{display:block}.ch small{color:var(--m);font-size:13px;font-weight:400}
+#choices{display:none;margin-top:14px;animation:up .4s ease both}
+.chip{display:inline-block;background:#173a2a;color:var(--g2);border-radius:20px;padding:2px 14px;font-size:14px;margin-bottom:6px}
+.ch{display:flex;align-items:center;gap:14px;width:100%;text-align:right;background:#ffffff08;border:1px solid var(--line);color:var(--t);border-radius:18px;padding:15px;margin:10px 0;font-size:17px;cursor:pointer;text-decoration:none;transition:transform .15s,border-color .15s,background .15s;font-family:inherit}
+.ch:hover,.ch:active{transform:translateY(-2px);border-color:var(--g2);background:#5fd1a014}
+.ch .i{font-size:28px;width:50px;height:50px;border-radius:15px;background:#5fd1a01c;display:grid;place-items:center;flex:none}
+.ch b{display:block}.ch small{color:var(--m);font-size:13px;font-weight:400}
 .ch[disabled],.ch.off{opacity:.45;pointer-events:none}
-#st{display:none;background:#0d1d16;border:1px dashed #2b5f45;border-radius:16px;padding:14px;margin-top:10px;font-size:15px}
+#st{display:none;background:#06100b;border:1px dashed #2b5f45;border-radius:16px;padding:14px;margin-top:10px;font-size:15px}
 #st a.save{display:block;text-align:center;background:var(--g);color:#fff;border-radius:12px;padding:12px;margin-top:10px;text-decoration:none;font-weight:700}
-.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin:16px 0}
 .card h2{margin:0 0 8px;font-size:20px;color:var(--g2)}
-.btn{display:inline-block;background:var(--g);color:#fff;text-decoration:none;border-radius:12px;padding:12px 20px;font-size:16px;margin:4px 0}
-.btn.alt{background:#1d3a2a}
+.btn{display:inline-block;background:linear-gradient(135deg,var(--g),#1f6b4a);color:#fff;text-decoration:none;border-radius:14px;padding:12px 22px;font-size:16px;font-weight:700;margin:4px 0;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px #2e8b6244}
+.btn.alt{background:#ffffff0d;border:1px solid #5fd1a044;color:var(--g3)}
 .n{color:var(--m);font-size:14px}code{direction:ltr;unicode-bidi:embed;word-break:break-all;color:#bfe9d3;font-size:12px}
-ol,ul{padding-right:22px;margin:6px 0}
-@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes glow{0%,100%{box-shadow:0 0 0 0 #2e8b6255}50%{box-shadow:0 0 24px 4px #2e8b6240}}
-header,.paste,.card{animation:up .6s ease both}.card:nth-of-type(2){animation-delay:.1s}.card:nth-of-type(3){animation-delay:.18s}.card:nth-of-type(4){animation-delay:.26s}
-.go{animation:glow 3.2s ease-in-out infinite;transition:transform .12s}.go:active{transform:scale(.98)}
-.bis{letter-spacing:.5px}
-body::before{content:"";position:fixed;inset:0;background:radial-gradient(500px 300px at 10% 90%,#1f6b4a22,transparent),radial-gradient(400px 300px at 95% 20%,#5fd1a01a,transparent);pointer-events:none;z-index:-1}
-@media (prefers-reduced-motion:reduce){*{animation:none!important}}
-.owner .who{display:flex;gap:14px;align-items:center;margin:6px 0 10px}.av{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#5fd1a0,#1f6b4a);display:grid;place-items:center;font-weight:900;font-size:24px;color:#07140e}.btn.alt{background:#173a2a;color:#5fd1a0}
+ol,ul{padding-right:22px;margin:6px 0}li{margin:3px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid .card{margin:0;text-align:center;padding:16px 12px}
+.grid .card .big{font-size:30px}
+.grid .card h2{font-size:17px}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.owner .who{display:flex;gap:14px;align-items:center;margin:6px 0 10px}
+.av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#5fd1a0,#1f6b4a);display:grid;place-items:center;font-weight:900;font-size:24px;color:#07140e;box-shadow:0 6px 20px #2e8b6255}
 footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
-</style></head><body><main>
-<header><div class="bis">صلِّ على النبي 🤍</div><h1>تنزيل</h1><p class="lead">الصق الرابط، واختار تنزّله إزاي.</p></header>
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+<main>
+<header><div class="bis">صلِّ على النبي 🤍</div>
+<div class="logo"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#07140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></div>
+<h1>تنزيل</h1><p class="lead">الصق الرابط، واختار تنزّله إزاي.</p>
+<div class="badges"><span>مجاني</span><span>بدون إعلانات</span><span>من غير حساب</span><span>بدون تتبع</span></div></header>
 
 <section class="paste">
 <input id="u" placeholder="الصق رابط الفيديو هنا" inputmode="url" autocomplete="off">
@@ -56,14 +76,16 @@ footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
 </div>
 </section>
 
-<section class="card"><h2>📥 حمّل التطبيق</h2>
+<div class="grid">
+<section class="card"><div class="big">📥</div><h2>التطبيق</h2><p class="n" style="margin:0 0 8px">أندرويد، كل المنصات</p><a class="btn" href="#app">حمّله</a></section>
+<section class="card"><div class="big">🤖</div><h2>البوت</h2><p class="n" style="margin:0 0 8px">تليجرام، لحد 2 جيجا</p><a class="btn alt" href="https://t.me/MosaMatrixBot">افتح البوت</a></section>
+</div>
+
+<section class="card" id="app"><h2>📥 حمّل التطبيق</h2>
 <p id="ver">جارٍ جلب آخر نسخة ...</p>
 <a class="btn" id="dl" href="https://github.com/eslamahmedyosef12-cyber/Gooo/releases">حمّل آخر نسخة</a>
 <p class="n" id="sha"></p>
 <p class="n">أندرويد فقط. ثبّت الجديدة فوق القديمة وبياناتك تفضل زي ما هي.</p></section>
-
-<section class="card"><h2>🤖 البوت على تليجرام</h2>
-<p class="n">ابعت أي رابط للبوت وهو يجيبهولك.</p><a class="btn alt" href="https://t.me/MosaMatrixBot">افتح البوت</a></section>
 
 <section class="card"><h2>🔗 اربط البوت بالتطبيق</h2>
 <ol><li>في التطبيق: الإعدادات ثم ربط البوت، هيظهرلك كود من 8 حروف.</li><li>في البوت ابعت: <code>/link الكود</code></li><li>خلاص. اضغط "أرسل للتطبيق" تحت أي رابط في البوت.</li></ol>
@@ -75,10 +97,12 @@ footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
 <li><b>يوتيوب:</b> بيحظر السيرفرات، فالطريقة الوحيدة هي التطبيق (من نت موبايلك).</li>
 <li>ريديت وفيميو غير مدعومين حاليًا.</li></ul></section>
 
+<!-- YOUTUBE_LINK_SPOT: ضع هنا بطاقة قناة اليوتيوب بعد ما يوصل الرابط (لا تضف زر وهمي) -->
+
 <section class="card owner"><h2>👤 المطوّر</h2>
 <div class="who"><div class="av">G</div><div><b>༺ الـمـصـري ⦓Goo⦔ ༻</b><div class="n">المطوّر وصاحب المشروع</div></div></div>
 <p class="n" style="margin:6px 0 10px;line-height:1.8">مطوّر مصري بيحب التكنولوجيا والذكاء الاصطناعي، وصاحب مشروع «تنزيل». شغله كله على تطبيقات بسيطة وقوية تسهّل حياة الناس، وتجمع بين فكرة جديدة وسهولة في الاستخدام.</p>
-<a class="btn" href="https://wa.me/201144864084">💬 واتساب</a> <a class="btn alt" href="https://t.me/Gx_o5">✈️ تليجرام</a></section>
+<div class="links"><a class="btn" href="https://wa.me/201144864084">💬 واتساب</a> <a class="btn alt" href="https://t.me/Gx_o5">✈️ تليجرام</a> <a class="btn alt" href="https://t.me/MosaMatrixBot">🤖 البوت</a></div></section>
 <footer>مجاني بدون إعلانات ولا حسابات ولا تتبع. الرابط اللي بتبعته للبوت أو للتحميل بيتحفظ مؤقتًا (ساعة أو يوم كحد أقصى) لحد ما يتم.<div style="margin-top:8px">المطوّر: ༺ الـمـصـري ⦓Goo⦔ ༻</div></footer>
 </main>
 <script>
@@ -90,8 +114,8 @@ function plat(v){if(/tiktok\.com|vm\.tiktok/i.test(v))return"tiktok";if(/youtube
 var NM={tiktok:"تيك توك",yt:"يوتيوب",ig:"إنستجرام",fb:"فيسبوك",x:"إكس (تويتر)",other:"رابط آخر"};
 function say(h){st.style.display="block";st.innerHTML=h}
 function err(e){return e&&/rate/.test(e.message||"")?"طلبات كتير، جرّب بعد دقيقة.":(e&&/busy/.test(e.message||"")?"السيرفر مشغول دلوقتي، جرّب بعد شوية أو ابعته للبوت.":"حصل خطأ، جرّب تاني بعد شوية.")}
-$("check").onclick=function(){var v=u.value.trim();st.style.display="none";
- if(!/^https?:\/\/\S+$/.test(v)){m.textContent="الصق رابط صالح الأول (يبدأ بـ https).";$("choices").style.display="none";return}
+$("check").onclick=function(){var mm=u.value.match(/https?:\/\/[^\s\u0600-\u06FF\u200e\u200f\u202a-\u202e"'<>]+/i),v=mm?mm[0]:"";if(v){u.value=v}st.style.display="none";
+ if(!v){m.textContent="الصق رابط الفيديو كامل، لازم يبدأ بـ https";$("choices").style.display="none";return}
  cur=v;m.textContent="";var p=plat(v);$("plat").textContent=NM[p];$("choices").style.display="block";
  var c1=$("c1");c1.classList.toggle("off",p==="yt");
  $("c1s").textContent=p==="yt"?"يوتيوب بيحظر السيرفرات، استخدم التطبيق":(p==="tiktok"?"ينزل مباشرة من جهازك بدون علامة مائية":"عن طريق سيرفر مجاني (لحد 44 ميجا)");
