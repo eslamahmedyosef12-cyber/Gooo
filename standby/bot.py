@@ -217,8 +217,36 @@ def upload(method, field, chat, path, extra=None):
 
 def mb(n):
     if not n:
-        return 'الحجم غير معروف'
+        return 'الحجم يظهر بعد البدء'
+    if n < 1048576:
+        return f'{max(1, round(n/1024))} كيلوبايت'
     return f'{n/1048576:.1f} ميجا'
+
+
+def est(f, d):
+    n = f.get('filesize') or f.get('filesize_approx') or 0
+    if not n:
+        br = f.get('tbr') or f.get('abr') or 0
+        du = d.get('duration') or 0
+        if br and du:
+            n = int(br * 1000 / 8 * du)
+    return n
+
+
+def head_size(url):
+    # actual size from the server (Content-Length), 0 if not available
+    try:
+        r = urllib.request.Request(url, method='HEAD', headers={'User-Agent': UA})
+        with urllib.request.urlopen(r, timeout=8) as x:
+            return int(x.headers.get('Content-Length') or 0)
+    except Exception:
+        try:
+            r = urllib.request.Request(url, headers={'User-Agent': UA, 'Range': 'bytes=0-0'})
+            with urllib.request.urlopen(r, timeout=8) as x:
+                cr = x.headers.get('Content-Range') or ''
+                return int(cr.split('/')[-1]) if '/' in cr and cr.split('/')[-1].isdigit() else 0
+        except Exception:
+            return 0
 
 
 def http_json(url, data=None, timeout=25):
@@ -241,6 +269,12 @@ def probe_tiktok(url):
         opts.append({'key': 'sd', 'label': 'جودة عادية بدون علامة مائية', 'size': x.get('size') or 0, 'kind': 'video', 'src': x['play']})
     if x.get('music'):
         opts.append({'key': 'au', 'label': 'الصوت فقط', 'size': 0, 'kind': 'audio', 'src': x['music']})
+    for o in opts:
+        real = head_size(o['src'])
+        if real > 50000:
+            o['size'] = real
+        elif o['size'] and o['size'] < 50000:
+            o['size'] = 0
     return (x.get('title') or 'TikTok')[:80], opts
 
 
@@ -287,13 +321,13 @@ def probe_ytdlp(url):
     d = json.loads(r.stdout)
     META[url] = {'thumb': d.get('thumbnail'), 'dur': d.get('duration'), 'by': d.get('uploader') or d.get('channel')}
     fm = d.get('formats') or []
-    aud = max([f.get('filesize') or f.get('filesize_approx') or 0 for f in fm if f.get('vcodec') == 'none'] or [0])
+    aud = max([est(f, d) for f in fm if f.get('vcodec') == 'none'] or [0])
     best = {}
     for f in fm:
         h = f.get('height')
         if not h or f.get('vcodec') in (None, 'none') or h > 1080:
             continue
-        sz = f.get('filesize') or f.get('filesize_approx') or 0
+        sz = est(f, d)
         has_a = f.get('acodec') not in (None, 'none')
         tot = sz + (0 if has_a else aud) if sz else 0
         if h not in best or (tot and tot < best[h]) or not best[h]:
@@ -309,7 +343,7 @@ def probe_ytdlp(url):
                 continue
             seen.add(fid)
             lab = {'hd': 'جودة عالية', 'sd': 'جودة عادية'}.get(fid.lower(), fid)
-            opts.append({'key': 'f' + fid[:20], 'label': lab, 'size': f.get('filesize') or f.get('filesize_approx') or 0, 'kind': 'video', 'fid': fid})
+            opts.append({'key': 'f' + fid[:20], 'label': lab, 'size': est(f, d), 'kind': 'video', 'fid': fid})
         opts = opts[-3:]
     if any(f.get('vcodec') == 'none' for f in fm):
         opts.append({'key': 'au', 'label': 'الصوت فقط (MP3)', 'size': aud, 'kind': 'audio'})
@@ -511,7 +545,7 @@ def send_app(chat):
     if not a:
         send(chat, 'مقدرتش أجيب نسخة التطبيق دلوقتي، جرّب بعد شوية.')
         return
-    cap = f'تطبيق تنزيل، آخر نسخة {a["ver"]} ({mb(a["size"])})\nلو عندك نسخة قديمة، ثبّت دي فوقها وبياناتك هتفضل زي ما هي. صلِّ على النبي 🤍'
+    cap = f'تطبيق تنزيل، آخر نسخة {a["ver"]} ({mb(a["size"])})\nلو عندك نسخة قديمة، ثبّت دي فوقها وبياناتك هتفضل زي ما هي. صلِّ على النبي 💚'
     with APP_LOCK:
         fid = a['fid'].get(a['tag'])
         if fid:
@@ -632,7 +666,7 @@ def safe_submit(fn, chat, *a):
     POOL.submit(run)
 
 
-WELCOME = ('صلِّ على النبي يا صاحبي 🤍\n\nأهلًا بيك في تنزيل بوت 👋\n\nابعتلي رابط فيديو وأنا أنزّله وأبعتهولك هنا.\n'
+WELCOME = ('صلِّ على النبي يا صاحبي 💚\n\nأهلًا بيك في تنزيل بوت 👋\n\nابعتلي رابط فيديو وأنا أنزّله وأبعتهولك هنا.\n'
            '• تيك توك: بدون علامة مائية\n• إنستجرام (منشورات وريلز عامة) وفيسبوك وإكس (تويتر)\n• يوتيوب: بيتحوّل للتطبيق بزرار واحد (السيرفر محظور منه) · ريديت غير متاح حاليًا\n• كل رابط: فيديو بجودات أو صوت MP3 فقط\n\n'
            f'حد تليجرام للبوتات {LIMIT_TXT}، فهوريك الأحجام قبل التنزيل.\n\n• روابط متعددة (حتى 3) في رسالة واحدة · ⚡ أفضل جودة تلقائيًا · شغال في المجموعات كمان\n\nلربط البوت بالتطبيق: /link الكود (من إعدادات التطبيق). لفك الربط: /unlink\nآخر تنزيلاتك: /history · حالة البوت: /status\nتحميل تطبيق تنزيل (آخر نسخة): /app')
 APP_KB = {'inline_keyboard': [
@@ -640,10 +674,10 @@ APP_KB = {'inline_keyboard': [
     [{'text': '📜 تنزيلاتي', 'callback_data': 'g|hist'}, {'text': '📊 إحصائياتي', 'callback_data': 'g|stats'}],
     [{'text': '🔗 ربط التطبيق', 'callback_data': 'g|link'}, {'text': '❓ مساعدة', 'callback_data': 'g|help'}],
     [{'text': '🌐 الموقع', 'url': 'https://eslamahmedyosef12-cyber.github.io/Gooo/site/'}, {'text': '👤 المطوّر', 'callback_data': 'g|dev'}]]}
-DEV_TXT = '👤 المطوّر\n\n༺ الـمـصـري ⦓Goo⦔ ༻\nالمطوّر وصاحب المشروع\n\nمطوّر مصري بيحب التكنولوجيا والذكاء الاصطناعي، وصاحب مشروع «تنزيل». شغله كله على تطبيقات بسيطة وقوية تسهّل حياة الناس، وتجمع بين فكرة جديدة وسهولة في الاستخدام.\n\nصلِّ على النبي يا صاحبي 🤍'
+DEV_TXT = '👤 المطوّر\n\nالمصري Goo\nالمطوّر وصاحب المشروع\n\nمطوّر مصري بيحب التكنولوجيا والذكاء الاصطناعي، وصاحب مشروع «تنزيل». شغله كله على تطبيقات بسيطة وقوية تسهّل حياة الناس، وتجمع بين فكرة جديدة وسهولة في الاستخدام.\n\nصلِّ على النبي يا صاحبي 💚'
 DEV_KB = {'inline_keyboard': [[{'text': '💬 واتساب', 'url': 'https://wa.me/201144864084'}, {'text': '✈️ تليجرام', 'url': 'https://t.me/Gx_o5'}]]}
-START_TXT = ('ابعتلي أي رابط فيديو وأنا أجيبهولك 🎬\n\n🎵 تيك توك  ·  📸 إنستجرام  ·  📘 فيسبوك  ·  𝕏 إكس\n'
-             '▶️ يوتيوب: بضغطة واحدة يفتح في التطبيق\n\nوالباقي من الأزرار اللي تحت 👇\n\n🌐 الموقع: eslamahmedyosef12-cyber.github.io/Gooo/site\nالمطوّر: الـمـصـري Goo · /dev')
+START_TXT = ('ابعتلي أي رابط فيديو وأنا أجيبهولك 🎬\n\n🎵 تيك توك  ·  📸 إنستجرام  ·  📘 فيسبوك  ·  X إكس\n'
+             '▶️ يوتيوب: بضغطة واحدة يفتح في التطبيق\n\nوالباقي من الأزرار اللي تحت 👇\n\n🌐 الموقع: eslamahmedyosef12-cyber.github.io/Gooo/site\nالمطوّر: المصري Goo · /dev')
 
 
 def send_to_app(chat, jid):
@@ -675,7 +709,7 @@ def handle(u):
             cid = q['message']['chat']['id']
             PENDING.discard(cid)
             set_user(cid, '', True)
-            send(cid, 'تمام 🤍 ' + START_TXT + '\n\nولو حبيت تسجّل اسمك بعدين: /name اسمك', APP_KB)
+            send(cid, 'تمام 💚 ' + START_TXT + '\n\nولو حبيت تسجّل اسمك بعدين: /name اسمك', APP_KB)
             return
         if len(parts) == 2 and parts[0] == 'g' and parts[1] in ('hist', 'stats', 'help', 'link', 'dev'):
             mm = q['message']
@@ -720,15 +754,15 @@ def handle(u):
         if text.startswith('/help'):
             send(chat, WELCOME, APP_KB)
         elif group:
-            send(chat, 'صلِّ على النبي 🤍\n\n' + START_TXT, APP_KB)
+            send(chat, 'صلِّ على النبي 💚\n\n' + START_TXT, APP_KB)
         elif u and u.get('name'):
-            send(chat, f'أهلًا بيك يا {u["name"]} 🤍\n\n' + START_TXT, APP_KB)
+            send(chat, f'أهلًا بيك يا {u["name"]} 💚\n\n' + START_TXT, APP_KB)
         elif u is None:
             PENDING.add(chat)
-            send(chat, 'صلِّ على النبي يا صاحبي 🤍\nأهلًا بيك في تنزيل بوت 👋\n\nاسمك إيه؟ اكتبه وأنا هناديك بيه كل مرة.',
+            send(chat, 'صلِّ على النبي يا صاحبي 💚\nأهلًا بيك في تنزيل بوت 👋\n\nاسمك إيه؟ اكتبه وأنا هناديك بيه كل مرة.',
                  {'inline_keyboard': [[{'text': 'تخطّي', 'callback_data': 'n|skip'}]]})
         else:
-            send(chat, 'صلِّ على النبي يا صاحبي 🤍\n\n' + START_TXT, APP_KB)
+            send(chat, 'صلِّ على النبي يا صاحبي 💚\n\n' + START_TXT, APP_KB)
         return
     if text.startswith('/name') and not group:
         nm = text.split(None, 1)[1].strip()[:30] if len(text.split(None, 1)) > 1 else ''
@@ -736,7 +770,7 @@ def handle(u):
             send(chat, 'اكتب كده: /name اسمك')
             return
         PENDING.discard(chat)
-        send(chat, f'تشرّفنا يا {nm} 🤍' if set_user(chat, nm) else 'مقدرتش أحفظ الاسم دلوقتي، جرّب بعد شوية.')
+        send(chat, f'تشرّفنا يا {nm} 💚' if set_user(chat, nm) else 'مقدرتش أحفظ الاسم دلوقتي، جرّب بعد شوية.')
         return
     if text.startswith('/dev'):
         send(chat, DEV_TXT, DEV_KB)
@@ -783,7 +817,7 @@ def handle(u):
         nm = ' '.join(text.split())[:30]
         if len(nm) >= 1:
             PENDING.discard(chat)
-            send(chat, f'تشرّفنا يا {nm} 🤍\n\n' + START_TXT if set_user(chat, nm) else 'مقدرتش أحفظ الاسم دلوقتي، ابعتلي رابط عادي وهنكمّل.')
+            send(chat, f'تشرّفنا يا {nm} 💚\n\n' + START_TXT if set_user(chat, nm) else 'مقدرتش أحفظ الاسم دلوقتي، ابعتلي رابط عادي وهنكمّل.')
             return
     urls = list(dict.fromkeys(URL_RE.findall(text)))[:3]
     if urls:
