@@ -55,15 +55,25 @@ ol,ul{padding-right:22px;margin:6px 0}li{margin:3px 0}
 .av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#5fd1a0,#1f6b4a);display:grid;place-items:center;font-weight:900;font-size:24px;color:#07140e;box-shadow:0 6px 20px #2e8b6255}
 footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+nav.menu{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:rgba(6,16,11,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #1d4a35;scrollbar-width:none}
+nav.menu::-webkit-scrollbar{display:none}
+nav.menu a{flex:0 0 auto;color:var(--t);text-decoration:none;font-size:14px;padding:6px 14px;border-radius:999px;background:#0e2619;border:1px solid #1d4a35}
+nav.menu a:active{background:#1f6b4a}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.feat div{background:#0a1d13;border:1px solid #1d4a35;border-radius:14px;padding:12px}
+.feat b{display:block;margin-bottom:2px}
+details{border-top:1px solid #1d4a35;padding:10px 0}details summary{cursor:pointer;font-weight:700}details p{margin:8px 0 0;opacity:.85}
+section[id]{scroll-margin-top:64px}
 </style></head><body>
 <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+<nav class="menu"><a href="#top">التحميل</a><a href="#app">التطبيق</a><a href="#bot">البوت</a><a href="#why">المميزات</a><a href="#faq">أسئلة</a><a href="#limits">الحدود</a><a href="#dev">المطوّر</a></nav>
 <main>
-<header><div class="bis">صلِّ على النبي 🤍</div>
+<header><div class="bis">صلِّ على النبي 💚</div>
 <div class="logo"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#07140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></div>
 <h1>تنزيل</h1><p class="lead">الصق الرابط، واختار تنزّله إزاي.</p>
 <div class="badges"><span>مجاني</span><span>بدون إعلانات</span><span>من غير حساب</span><span>بدون تتبع</span></div></header>
 
-<section class="paste">
+<section class="paste" id="top">
 <input id="u" placeholder="الصق رابط الفيديو هنا" inputmode="url" autocomplete="off">
 <button class="go" id="check">ابدأ</button>
 <div class="msg" id="m"></div>
@@ -87,11 +97,17 @@ footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
 <p class="n" id="sha"></p>
 <p class="n">أندرويد فقط. ثبّت الجديدة فوق القديمة وبياناتك تفضل زي ما هي.</p></section>
 
-<section class="card"><h2>🔗 اربط البوت بالتطبيق</h2>
+<section class="card" id="bot"><h2>🔗 اربط البوت بالتطبيق</h2>
 <ol><li>في التطبيق: الإعدادات ثم ربط البوت، هيظهرلك كود من 8 حروف.</li><li>في البوت ابعت: <code>/link الكود</code></li><li>خلاص. اضغط "أرسل للتطبيق" تحت أي رابط في البوت.</li></ol>
 <p class="n">الكود بيصلح 10 دقايق ومرة واحدة، وتقدر تفك الربط في أي وقت.</p></section>
 
-<section class="card"><h2>🌍 الحدود بصراحة</h2>
+<section class="card" id="why"><h2>ليه تنزيل؟</h2><div class="feat"><div><b>مجاني بالكامل</b><span class="n">بدون إعلانات ولا حسابات.</span></div><div><b>خفيف على النت</b><span class="n">بيعرض الحجم قبل ما تنزّل.</span></div><div><b>أكتر من منصة</b><span class="n">تيك توك، إنستجرام، فيسبوك، إكس.</span></div><div><b>بدون تتبع</b><span class="n">مفيش بيانات بتتجمع عنك.</span></div></div></section>
+<section class="card" id="faq"><h2>أسئلة شائعة</h2>
+<details><summary>أنزّل إزاي من الموقع؟</summary><p>الصق الرابط واضغط ابدأ، وبعدها اختار: من المتصفح، أو عن طريق البوت، أو من التطبيق.</p></details>
+<details><summary>ليه الملف الكبير مبيتحمّلش من المتصفح؟</summary><p>السيرفر المجاني بيحمّل لحد 44 ميجا. الملفات الأكبر الأفضل تتنزّل من التطبيق.</p></details>
+<details><summary>هل يوتيوب شغال؟</summary><p>من الموقع والبوت لأ، لأن يوتيوب بيحجب السيرفرات. التطبيق هو الطريقة الوحيدة.</p></details>
+<details><summary>هل التطبيق آمن؟</summary><p>ملفه موقّع ومعروض عليه كود التحقق sha256 في صفحة التحميل. ثبّت الجديد فوق القديم وبياناتك تفضل زي ما هي.</p></details></section>
+<section class="card" id="limits"><h2>🌍 الحدود بصراحة</h2>
 <ul><li><b>تيك توك:</b> التنزيل في المتصفح مباشر وبدون علامة مائية.</li>
 <li><b>إنستجرام وفيسبوك وإكس:</b> التنزيل في المتصفح بيتم عن طريق سيرفر مجاني للملفات لحد 44 ميجا، وبعدها بيتمسح خلال ساعة. للأكبر استخدم البوت.</li>
 <li><b>يوتيوب:</b> بيحظر السيرفرات، فالطريقة الوحيدة هي التطبيق (من نت موبايلك).</li>
@@ -99,11 +115,11 @@ footer{text-align:center;color:var(--m);font-size:13px;margin-top:26px}
 
 <!-- YOUTUBE_LINK_SPOT: ضع هنا بطاقة قناة اليوتيوب بعد ما يوصل الرابط (لا تضف زر وهمي) -->
 
-<section class="card owner"><h2>👤 المطوّر</h2>
-<div class="who"><div class="av">G</div><div><b>༺ الـمـصـري ⦓Goo⦔ ༻</b><div class="n">المطوّر وصاحب المشروع</div></div></div>
+<section class="card owner" id="dev"><h2>👤 المطوّر</h2>
+<div class="who"><div class="av">G</div><div><b>المصري Goo</b><div class="n">المطوّر وصاحب المشروع</div></div></div>
 <p class="n" style="margin:6px 0 10px;line-height:1.8">مطوّر مصري بيحب التكنولوجيا والذكاء الاصطناعي، وصاحب مشروع «تنزيل». شغله كله على تطبيقات بسيطة وقوية تسهّل حياة الناس، وتجمع بين فكرة جديدة وسهولة في الاستخدام.</p>
 <div class="links"><a class="btn" href="https://wa.me/201144864084">💬 واتساب</a> <a class="btn alt" href="https://t.me/Gx_o5">✈️ تليجرام</a> <a class="btn alt" href="https://t.me/MosaMatrixBot">🤖 البوت</a></div></section>
-<footer>مجاني بدون إعلانات ولا حسابات ولا تتبع. الرابط اللي بتبعته للبوت أو للتحميل بيتحفظ مؤقتًا (ساعة أو يوم كحد أقصى) لحد ما يتم.<div style="margin-top:8px">المطوّر: ༺ الـمـصـري ⦓Goo⦔ ༻</div></footer>
+<footer>مجاني بدون إعلانات ولا حسابات ولا تتبع. الرابط اللي بتبعته للبوت أو للتحميل بيتحفظ مؤقتًا (ساعة أو يوم كحد أقصى) لحد ما يتم.<div style="margin-top:8px">المطوّر: المصري Goo</div></footer>
 </main>
 <script>
 (function(){
