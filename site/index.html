@@ -36,6 +36,11 @@ footer{text-align:center;color:var(--m);font-size:14px;margin-top:30px}
 <li>خلاص. أي رابط تبعته للبوت تقدر تضغط "أرسل للتطبيق" والرابط يوصل لصندوق التطبيق.</li></ol>
 <p class="n">الكود بيصلح 10 دقايق ومرة واحدة، وتقدر تفك الربط في أي وقت.</p></section>
 
+<section class="card"><h2>⬇️ نزّل فيديو بالبوت</h2>
+<p class="n">الصق رابط من تيك توك أو إنستجرام أو فيسبوك أو إكس. البوت ينزّله ويبعتهولك في تليجرام (لحد 2 جيجا).</p>
+<input id="bu" placeholder="https://..." inputmode="url"><button class="btn" id="bgo">نزّل بالبوت</button>
+<p class="n" id="bm"></p></section>
+
 <section class="card"><h2>📲 افتح رابط في التطبيق</h2>
 <p class="n">الصق رابط (يوتيوب مثلًا) وهيفتح تطبيق تنزيل عليه على موبايلك.</p>
 <input id="u" placeholder="https://..." inputmode="url"><a class="btn" id="go" href="#">افتح في تنزيل</a>
@@ -46,7 +51,7 @@ footer{text-align:center;color:var(--m);font-size:14px;margin-top:30px}
 <li>في التطبيق: حسب الرابط، ويشمل يوتيوب لأنه بينزّل من النت بتاعك.</li></ul>
 <p class="n"><b>ملحوظة صريحة عن يوتيوب:</b> يوتيوب بيحظر السيرفرات، فالبوت مش بينزّل منه. بيحوّل الرابط للتطبيق وهو اللي ينزّل. ريديت وفيميو حاليًا غير مدعومين من البوت.</p></section>
 
-<footer>مجاني بدون إعلانات. الموقع ما بيجمعش بيانات ولا فيه تتبع.</footer>
+<footer>مجاني بدون إعلانات. الموقع ما بيجمعش بيانات ولا فيه تتبع. الرابط اللي بتلصقه للبوت بيتحفظ مؤقتًا (يوم واحد كحد أقصى) لحد ما البوت يستلمه.</footer>
 </main>
 <script>
 (function(){
@@ -61,5 +66,14 @@ fetch("https://api.github.com/repos/eslamahmedyosef12-cyber/Gooo/releases?per_pa
 var u=document.getElementById("u"),g=document.getElementById("go");
 function up(){var v=u.value.trim();if(/^https?:\/\/\S+$/.test(v)){g.href="intent:#Intent;action=android.intent.action.SEND;type=text/plain;package=com.khaznati.khaznati;S.android.intent.extra.TEXT="+encodeURIComponent(v)+";end";document.getElementById("gm").textContent="";}else{g.href="#"}}
 u.addEventListener("input",up);g.addEventListener("click",function(e){if(g.getAttribute("href")==="#"){e.preventDefault();document.getElementById("gm").textContent="ألصق رابط صالح الأول."}});
+var bu=document.getElementById("bu"),bb=document.getElementById("bgo"),bm=document.getElementById("bm");
+bb.addEventListener("click",function(){var v=bu.value.trim();
+ if(!/^https?:\/\/\S+$/.test(v)){bm.textContent="ألصق رابط صالح الأول.";return}
+ if(/(youtube\.com|youtu\.be)/i.test(v)){bm.textContent="يوتيوب بيحظر السيرفرات. استخدم زرار \"افتح في تنزيل\" تحت، والتطبيق ينزّله من نت موبايلك.";return}
+ bm.textContent="لحظة ...";bb.disabled=true;
+ fetch("https://dinlporwlqeoyvllhapo.supabase.co/rest/v1/rpc/tnzl_web_put",{method:"POST",headers:{"apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpbmxwb3J3bHFlb3l2bGxoYXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NTM5MjksImV4cCI6MjExMTEyOTkyOX0.V31jIYTikcYC5-Z36pxRVWWjbX_6W_akavzqH-a0e6k","Content-Type":"application/json"},body:JSON.stringify({p_url:v})})
+ .then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j})})
+ .then(function(c){bm.textContent="تمام، بيفتح البوت ...";location.href="https://t.me/MosaMatrixBot?start=j_"+c;bb.disabled=false})
+ .catch(function(e){bb.disabled=false;bm.textContent=(e&&/rate/.test(e.message||""))?"طلبات كتير، جرّب بعد دقيقة.":"حصل خطأ، جرّب تاني بعد شوية."});});
 })();
 </script></body></html>
