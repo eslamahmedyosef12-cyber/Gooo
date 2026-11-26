@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تنزيل | حمّل الفيديوهات بسهولة</title>
+<meta name="description" content="تطبيق تنزيل وبوت تليجرام لتنزيل الفيديوهات. مجاني، بدون تتبع.">
+<style>
+:root{--bg:#0b1510;--card:#12231a;--g:#2e7d5b;--g2:#4fb98a;--t:#eaf4ee;--m:#9db8a8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 50% -200px,#16402d,var(--bg));color:var(--t);font-family:"Segoe UI",Tahoma,Arial,sans-serif;line-height:1.8}
+main{max-width:720px;margin:auto;padding:28px 18px 60px}
+header{text-align:center;padding:30px 0 10px}header .s{color:var(--g2);font-size:18px}
+h1{margin:6px 0;font-size:40px}p.lead{color:var(--m);font-size:18px;margin:0 0 6px}
+.card{background:var(--card);border:1px solid #1d3a2a;border-radius:18px;padding:20px;margin:18px 0}
+.card h2{margin:0 0 10px;font-size:22px;color:var(--g2)}
+.btn{display:inline-block;background:var(--g);color:#fff;text-decoration:none;border:0;border-radius:12px;padding:13px 22px;font-size:17px;cursor:pointer;margin:4px 0}
+.btn.alt{background:#1d3a2a}.btn:hover{filter:brightness(1.15)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+small,.n{color:var(--m);font-size:14px}code{direction:ltr;unicode-bidi:embed;word-break:break-all;color:#bfe9d3;font-size:12px}
+ol{padding-right:22px;margin:6px 0}ul{padding-right:22px;margin:6px 0}
+input{width:100%;padding:13px;border-radius:12px;border:1px solid #2a5a40;background:#0b1510;color:var(--t);font-size:16px;direction:ltr;margin:8px 0}
+footer{text-align:center;color:var(--m);font-size:14px;margin-top:30px}
+</style></head><body><main>
+<header><div class="s">صلِّ على النبي 🤍</div><h1>تنزيل</h1><p class="lead">حمّل فيديوهاتك من تطبيق واحد وبوت تليجرام، ببساطة.</p></header>
+
+<section class="card"><h2>📥 حمّل التطبيق</h2>
+<p id="ver">جارٍ جلب آخر نسخة ...</p>
+<div class="row"><a class="btn" id="dl" href="https://github.com/eslamahmedyosef12-cyber/Gooo/releases">حمّل آخر نسخة</a></div>
+<p class="n" id="sha"></p>
+<p class="n">أندرويد فقط. لو عندك نسخة قديمة، ثبّت الجديدة فوقها وبياناتك تفضل زي ما هي. النسخة موقّعة بنفس الشهادة دائمًا.</p></section>
+
+<section class="card"><h2>🤖 البوت على تليجرام</h2>
+<p>ابعت أي رابط فيديو للبوت وهو يجيبهولك، لحد 2 جيجا.</p>
+<a class="btn alt" href="https://t.me/MosaMatrixBot">افتح البوت</a></section>
+
+<section class="card"><h2>🔗 اربط البوت بالتطبيق (3 خطوات)</h2>
+<ol><li>في التطبيق: الإعدادات ثم ربط البوت، هيظهرلك كود من 8 حروف.</li>
+<li>في البوت ابعت: <code>/link الكود</code></li>
+<li>خلاص. أي رابط تبعته للبوت تقدر تضغط "أرسل للتطبيق" والرابط يوصل لصندوق التطبيق.</li></ol>
+<p class="n">الكود بيصلح 10 دقايق ومرة واحدة، وتقدر تفك الربط في أي وقت.</p></section>
+
+<section class="card"><h2>📲 افتح رابط في التطبيق</h2>
+<p class="n">الصق رابط (يوتيوب مثلًا) وهيفتح تطبيق تنزيل عليه على موبايلك.</p>
+<input id="u" placeholder="https://..." inputmode="url"><a class="btn" id="go" href="#">افتح في تنزيل</a>
+<p class="n" id="gm"></p></section>
+
+<section class="card"><h2>🌍 المنصات المدعومة</h2>
+<ul><li>في البوت: تيك توك (بدون علامة مائية)، إنستجرام (عام)، فيسبوك، إكس (تويتر).</li>
+<li>في التطبيق: حسب الرابط، ويشمل يوتيوب لأنه بينزّل من النت بتاعك.</li></ul>
+<p class="n"><b>ملحوظة صريحة عن يوتيوب:</b> يوتيوب بيحظر السيرفرات، فالبوت مش بينزّل منه. بيحوّل الرابط للتطبيق وهو اللي ينزّل. ريديت وفيميو حاليًا غير مدعومين من البوت.</p></section>
+
+<footer>مجاني بدون إعلانات. الموقع ما بيجمعش بيانات ولا فيه تتبع.</footer>
+</main>
+<script>
+(function(){
+fetch("https://api.github.com/repos/eslamahmedyosef12-cyber/Gooo/releases?per_page=100").then(function(r){return r.json()}).then(function(rs){
+ var best=null;rs.forEach(function(r){var m=/^tnzl-wswr-v(\d+)$/.exec(r.tag_name||"");var a=(r.assets||[]).filter(function(x){return /\.apk$/.test(x.name)})[0];if(m&&a&&(!best||+m[1]>best.n))best={n:+m[1],r:r,a:a}});
+ if(!best)throw 0;
+ var v=(best.r.name||"").replace("تنزيل","").trim();
+ document.getElementById("ver").textContent="آخر نسخة: "+v+" ("+(best.a.size/1048576).toFixed(1)+" ميجا)";
+ document.getElementById("dl").href=best.a.browser_download_url;
+ if(best.a.digest)document.getElementById("sha").innerHTML="sha256: <code>"+best.a.digest.replace("sha256:","")+"</code>";
+}).catch(function(){document.getElementById("ver").textContent="تعذّر جلب رقم النسخة، الزرار تحت بيودّيك لصفحة التحميل."});
+var u=document.getElementById("u"),g=document.getElementById("go");
+function up(){var v=u.value.trim();if(/^https?:\/\/\S+$/.test(v)){g.href="intent:#Intent;action=android.intent.action.SEND;type=text/plain;package=com.khaznati.khaznati;S.android.intent.extra.TEXT="+encodeURIComponent(v)+";end";document.getElementById("gm").textContent="";}else{g.href="#"}}
+u.addEventListener("input",up);g.addEventListener("click",function(e){if(g.getAttribute("href")==="#"){e.preventDefault();document.getElementById("gm").textContent="ألصق رابط صالح الأول."}});
+})();
+</script></body></html>
