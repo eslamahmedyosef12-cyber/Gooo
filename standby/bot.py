@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """تنزيل بوت: Telegram long-polling bot. Stdlib only. Token read from TOKEN_FILE, never printed."""
+import uuid
 import tempfile, json, os, re, subprocess, sys, threading, time, uuid, urllib.parse, urllib.request, urllib.error, mimetypes, shutil
 from concurrent.futures import ThreadPoolExecutor
 
@@ -671,6 +672,7 @@ WELCOME = ('صلِّ على النبي يا صاحبي 💚\n\nأهلًا بيك
            f'حد تليجرام للبوتات {LIMIT_TXT}، فهوريك الأحجام قبل التنزيل.\n\n• روابط متعددة (حتى 3) في رسالة واحدة · ⚡ أفضل جودة تلقائيًا · شغال في المجموعات كمان\n\nلربط البوت بالتطبيق: /link الكود (من إعدادات التطبيق). لفك الربط: /unlink\nآخر تنزيلاتك: /history · حالة البوت: /status\nتحميل تطبيق تنزيل (آخر نسخة): /app')
 APP_KB = {'inline_keyboard': [
     [{'text': '📥 حمّل تطبيق تنزيل', 'callback_data': 'g|app'}],
+    [{'text': '🎧 احذف الموسيقى', 'callback_data': 'g|music'}],
     [{'text': '📜 تنزيلاتي', 'callback_data': 'g|hist'}, {'text': '📊 إحصائياتي', 'callback_data': 'g|stats'}],
     [{'text': '🔗 ربط التطبيق', 'callback_data': 'g|link'}, {'text': '❓ مساعدة', 'callback_data': 'g|help'}],
     [{'text': '🌐 الموقع', 'url': 'https://eslamahmedyosef12-cyber.github.io/Gooo/site/'}, {'text': '👤 المطوّر', 'callback_data': 'g|dev'}]]}
@@ -696,6 +698,95 @@ def send_to_app(chat, jid):
     send(chat, 'اتبعت للتطبيق ✅ افتح تنزيل وهتلاقيه في صندوق البوت، وهيسألك قبل ما ينزّل.' if ok else 'التطبيق مش مربوط. افتح التطبيق، اضغط ربط البوت وابعتلي /link والكود.')
 
 
+MEDIA = {}          # short id -> dict(chat, file_id, kind, name, size, dur)
+MUSIC_LAST = {}     # chat -> last start time
+MUSIC_INTRO = ('🎧 حذف الموسيقى\n\nابعتلي فيديو أو ملف صوتي، وهرجّعهولك من غير موسيقى مع إبقاء الصوت البشري (الكلام والغناء).\n\n'
+               'للأمانة: بيشيل الموسيقى والآلات والمؤثرات الخلفية، والنتيجة بتتفاوت حسب الملف. المعالجة بتاخد من 2 لـ 25 دقيقة حسب الطول (حد أقصى 20 دقيقة للملف)، '
+               'وهبعتلك الملف أول ما يخلص.')
+
+
+def media_of(m):
+    for key, kind in (('video', 'video'), ('audio', 'audio'), ('voice', 'audio'), ('video_note', 'video')):
+        x = m.get(key)
+        if x:
+            return kind, x
+    d = m.get('document')
+    if d:
+        mt = (d.get('mime_type') or '')
+        if mt.startswith('video/'):
+            return 'video', d
+        if mt.startswith('audio/'):
+            return 'audio', d
+    return None, None
+
+
+def handle_media(chat, m):
+    kind, x = media_of(m)
+    if not x:
+        return
+    size = x.get('file_size') or 0
+    cap = 200 * 1048576 if LOCAL else 20 * 1048576
+    if size > cap:
+        send(chat, 'الملف كبير (%s). الحد الأقصى دلوقتي %s.' % (mb(size), 'نحو 200 ميجا' if LOCAL else '20 ميجا'))
+        return
+    if (x.get('duration') or 0) > 1200:
+        send(chat, 'الملف أطول من 20 دقيقة. ابعت ملف أقصر.')
+        return
+    mid = uuid.uuid4().hex[:8]
+    name = safe_name(x.get('file_name') or x.get('title') or ('video' if kind == 'video' else 'audio'))
+    name = re.sub(r'\.[A-Za-z0-9]{2,4}$', '', name)[:40]
+    MEDIA[mid] = {'chat': chat, 'file_id': x['file_id'], 'kind': kind, 'name': name, 'size': size, 'dur': x.get('duration') or 0}
+    if len(MEDIA) > 200:
+        for k in list(MEDIA)[:100]:
+            MEDIA.pop(k, None)
+    what = 'الفيديو' if kind == 'video' else 'الملف الصوتي'
+    send(chat, f'وصلني {what} ({mb(size) if size else "الحجم غير معروف"}). أشيل الموسيقى وأسيب الصوت البشري؟',
+         {'inline_keyboard': [[{'text': '🎧 ابدأ حذف الموسيقى', 'callback_data': 'm|' + mid}]]})
+
+
+def music_run(chat, mid):
+    j = MEDIA.get(mid)
+    if not j or j['chat'] != chat:
+        send(chat, 'الطلب ده قديم، ابعت الملف تاني.')
+        return
+    if time.time() - MUSIC_LAST.get(chat, 0) < 180:
+        send(chat, 'استنى دقيقتين تلاتة لحد ما الطلب اللي قبله يخلص، وبعدين ابعت.')
+        return
+    gh = '/home/sandbox/.signing/github_token.txt'
+    if STANDBY or not os.path.exists(gh) or not SB_SVC:
+        send(chat, 'الخدمة دي شغالة من البوت الأساسي وهو بيرجع دلوقتي. ابعت الملف تاني بعد دقيقتين.')
+        return
+    MUSIC_LAST[chat] = time.time()
+    send(chat, 'بجهّز الملف للمعالجة ... 🎧')
+    try:
+        fi = api('getFile', {'file_id': j['file_id']})
+        if not fi.get('ok'):
+            send(chat, 'تليجرام مش راضي يسلّمني الملف ده (غالبًا كبير). جرّب ملف أصغر.')
+            MUSIC_LAST.pop(chat, None)
+            return
+        fp = fi['result']['file_path']
+        if LOCAL and fp.startswith('/'):
+            data = open(fp, 'rb').read()
+        else:
+            with urllib.request.urlopen(f'https://api.telegram.org/file/bot{TOKEN}/{fp}', timeout=180) as r:
+                data = r.read()
+        ext = os.path.splitext(fp)[1][:5] or ('.mp4' if j['kind'] == 'video' else '.mp3')
+        obj = 'in-%s%s' % (uuid.uuid4().hex[:12], re.sub(r'[^A-Za-z0-9.]', '', ext))
+        storage('POST', 'tnzl-tmp/' + obj, data, 'application/octet-stream')
+        url = f'{SB_HOST}/storage/v1/object/public/tnzl-tmp/{obj}'
+        del data
+        body = json.dumps({'ref': 'main', 'inputs': {'url': url, 'chat': str(chat), 'kind': j['kind'], 'name': j['name']}}).encode()
+        rq = urllib.request.Request('https://api.github.com/repos/eslamahmedyosef12-cyber/Gooo/actions/workflows/music.yml/dispatches', body,
+                                    {'Authorization': 'token ' + open(gh).read().strip(), 'Accept': 'application/vnd.github+json'})
+        urllib.request.urlopen(rq, timeout=30).read()
+        log('music', 'dispatched', j['kind'], j['size'])
+        send(chat, 'بدأت المعالجة ✅ هتوصلك النتيجة هنا لوحدها (من 2 لـ 25 دقيقة). تقدر تكمّل استخدام البوت عادي.')
+    except Exception as e:
+        log('music', 'fail', type(e).__name__)
+        MUSIC_LAST.pop(chat, None)
+        send(chat, 'حصلت مشكلة وأنا بجهّز الملف. جرّب تاني بعد شوية.')
+
+
 def handle(u):
     k = 'cb' if 'callback_query' in u else 'msg'
     c = ((u.get('message') or {}).get('chat') or {}).get('id') or ((u.get('callback_query') or {}).get('message') or {}).get('chat', {}).get('id')
@@ -710,6 +801,12 @@ def handle(u):
             PENDING.discard(cid)
             set_user(cid, '', True)
             send(cid, 'تمام 💚 ' + START_TXT + '\n\nولو حبيت تسجّل اسمك بعدين: /name اسمك', APP_KB)
+            return
+        if len(parts) == 2 and parts[0] == 'g' and parts[1] == 'music':
+            send(q['message']['chat']['id'], MUSIC_INTRO)
+            return
+        if len(parts) == 2 and parts[0] == 'm':
+            safe_submit(music_run, q['message']['chat']['id'], parts[1])
             return
         if len(parts) == 2 and parts[0] == 'g' and parts[1] in ('hist', 'stats', 'help', 'link', 'dev'):
             mm = q['message']
@@ -736,6 +833,12 @@ def handle(u):
     if not chat:
         return
     group = (m.get('chat') or {}).get('type') in ('group', 'supergroup', 'channel')
+    if media_of(m)[0] and not group:
+        safe_submit(handle_media, chat, m)
+        return
+    if text.startswith('/music'):
+        send(chat, MUSIC_INTRO)
+        return
     if text.startswith('/start') and not group and len(text.split()) > 1 and re.fullmatch(r'j_[0-9a-f]{10}', text.split()[1]):
         try:
             wu = sb('tnzl_web_take', p_bot=SB_BOT, p_code=text.split()[1][2:])
