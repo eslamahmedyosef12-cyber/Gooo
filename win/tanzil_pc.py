@@ -23,6 +23,12 @@ TXT = '#e8f5ec'
 SUB = '#9cc2aa'
 BAD = '#c0504d'
 FONT = 'Tahoma'
+GRN = '#7fe0b0'
+YEL = '#e0c97f'
+THEMES = {
+    'dark': dict(bg=BG, card=CARD, txt=TXT, sub=SUB, grn=GRN, yel=YEL),
+    'light': dict(bg='#f2f8f4', card='#dcebe1', txt='#10261a', sub='#4a6957', grn='#1c7a4c', yel='#8a6a00'),
+}
 
 AR = [
     'العلم نور والجهل ظلام، ومن طلب العلم سهّل الله له طريقًا إلى الجنة.',
@@ -52,34 +58,74 @@ EN = [
 AR = [re.sub('[\u064b-\u0652]', '', x) for x in AR]
 
 
-def data_dir():
-    base = os.environ.get('APPDATA') or os.path.expanduser('~')
-    d = os.path.join(base, 'TanzilPC')
+def _writable(d):
     try:
         os.makedirs(d, exist_ok=True)
+        t = os.path.join(d, '.w')
+        with open(t, 'w') as f:
+            f.write('1')
+        os.remove(t)
+        return True
     except Exception:
-        d = os.path.expanduser('~')
-    return d
+        return False
 
 
-DATA = os.path.join(data_dir(), 'data.json')
+def data_dir():
+    exe = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
+    cands = []
+    if os.environ.get('APPDATA'):
+        cands.append(os.path.join(os.environ['APPDATA'], 'TanzilPC'))
+    cands += [os.path.join(exe, 'TanzilData'), os.path.join(os.path.expanduser('~'), 'TanzilPC')]
+    try:
+        import tempfile
+        cands.append(os.path.join(tempfile.gettempdir(), 'TanzilPC'))
+    except Exception:
+        pass
+    for d in cands:
+        if _writable(d):
+            return d
+    return None
+
+
+DIR = data_dir()
+DATA = os.path.join(DIR, 'data.json') if DIR else None
+
+
+def log_crash(text):
+    try:
+        if DIR:
+            with open(os.path.join(DIR, 'crash.log'), 'a', encoding='utf-8') as f:
+                f.write('%s\n%s\n' % (datetime.datetime.now().isoformat(), text))
+    except Exception:
+        pass
 
 
 def load():
+    if not DATA:
+        return {}
     try:
         with open(DATA, 'r', encoding='utf-8') as f:
             d = json.load(f)
         if isinstance(d, dict):
             return d
+    except FileNotFoundError:
+        return {}
     except Exception:
-        pass
+        try:
+            os.replace(DATA, DATA + '.bad')
+        except Exception:
+            pass
     return {}
 
 
 def save(d):
+    if not DATA:
+        return
     try:
-        with open(DATA, 'w', encoding='utf-8') as f:
+        tmp = DATA + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(d, f, ensure_ascii=False)
+        os.replace(tmp, DATA)
     except Exception:
         pass
 
@@ -108,8 +154,25 @@ def beep_pattern(kind):
     threading.Thread(target=run, daemon=True).start()
 
 
-def main(tab=0, hook=None):
+def main(tab=0, hook=None, theme=None):
     root = tk.Tk()
+    global FONT
+    try:
+        import tkinter.font as tkfont
+        fams = set(tkfont.families(root))
+        for f in ('Tahoma', 'Segoe UI', 'Arial', 'Microsoft Sans Serif'):
+            if f in fams:
+                FONT = f
+                break
+        else:
+            FONT = 'TkDefaultFont'
+    except Exception:
+        pass
+
+    def on_err(exc, val, tb):
+        import traceback
+        log_crash(''.join(traceback.format_exception(exc, val, tb)))
+    root.report_callback_exception = on_err
     root.title(APP)
     root.configure(bg=BG)
     sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
@@ -137,8 +200,9 @@ def main(tab=0, hook=None):
     # header
     head = tk.Frame(root, bg=BG)
     head.pack(fill='x', pady=(8, 2))
-    L(head, 'تنزيل', 22, '#7fe0b0', True).pack()
+    L(head, 'تنزيل', 22, GRN, True).pack()
     L(head, 'مدرب الكتابة  ·  تايمر المذاكرة  ·  بدون إنترنت', 9, SUB).pack()
+    tk.Frame(head, bg=ACC, height=2, width=120).pack(pady=(6, 0))
 
     foot = L(root, 'تطوير: المصري Goo  ·  مجاني بدون إعلانات', 8, SUB)
     foot.pack(side='bottom', pady=4)
@@ -150,8 +214,11 @@ def main(tab=0, hook=None):
     f_type = tk.Frame(body, bg=BG)
     f_pomo = tk.Frame(body, bg=BG)
     tb = {}
+    cur_tab = {'i': 0}
+    cur_theme = {'n': 'dark'}
 
     def show(i):
+        cur_tab['i'] = i
         f_type.pack_forget()
         f_pomo.pack_forget()
         (f_type if i == 0 else f_pomo).pack(fill='both', expand=True)
@@ -178,17 +245,18 @@ def main(tab=0, hook=None):
                        activebackground=BG, activeforeground=TXT, font=(FONT, 10)).pack(side='left', padx=4)
     L(row, ':المدة', 10, SUB).pack(side='left', padx=4)
 
-    pass_card = tk.Frame(f_type, bg=CARD, padx=10, pady=8)
+    pass_card = tk.Frame(f_type, bg=CARD, padx=14, pady=12)
     pass_card.pack(fill='x', pady=4)
     pass_lbl = tk.Label(pass_card, text='', bg=CARD, fg=TXT, font=(FONT, 14), wraplength=560, justify='right')
     pass_lbl.pack(fill='x')
+    pass_card.bind('<Configure>', lambda e: pass_lbl.config(wraplength=max(200, e.width - 30)))
     entry = tk.Entry(f_type, font=(FONT, 14), bg='#f4fbf6', fg='#102016', relief='flat', justify='right')
     entry.pack(fill='x', pady=4, ipady=6)
     stat = L(f_type, 'اضغط ابدأ ثم اكتب النص بالأعلى', 11, SUB)
     stat.pack(fill='x')
     brow = tk.Frame(f_type, bg=BG)
     brow.pack(pady=4)
-    res = L(f_type, '', 12, '#7fe0b0', True)
+    res = L(f_type, '', 12, GRN, True)
     res.pack()
     L(f_type, 'آخر النتائج', 10, SUB).pack(anchor='e')
     hist = tk.Listbox(f_type, bg=CARD, fg=TXT, font=(FONT, 10), relief='flat', height=4, highlightthickness=0, justify='right')
@@ -222,7 +290,7 @@ def main(tab=0, hook=None):
             ts['job'] = None
         if finish and ts['start'] is not None:
             typed = entry.get()
-            secs = time.time() - ts['start']
+            secs = time.monotonic() - ts['start']
             w, a = calc(ts['passage'], typed, secs)
             entry.config(state='disabled')
             res.config(text='السرعة: %.0f كلمة/دقيقة   ·   الدقة: %.0f%%' % (w, a))
@@ -236,7 +304,7 @@ def main(tab=0, hook=None):
     def tick():
         if ts['start'] is None:
             return
-        left = int(ts['limit'] - (time.time() - ts['start']))
+        left = int(ts['limit'] - (time.monotonic() - ts['start']))
         typed = entry.get()
         n = min(len(typed), len(ts['passage']))
         bad = sum(1 for i in range(n) if ts['passage'][i] != typed[i])
@@ -248,7 +316,7 @@ def main(tab=0, hook=None):
 
     def on_key(ev):
         if ts['start'] is None and entry.cget('state') == 'normal' and ev.keysym not in ('Shift_L', 'Shift_R', 'Control_L', 'Control_R', 'Alt_L', 'Alt_R', 'Caps_Lock', 'Tab'):
-            ts['start'] = time.time()
+            ts['start'] = time.monotonic()
             ts['limit'] = lim_var.get()
             tick()
         typed = entry.get()
@@ -256,6 +324,8 @@ def main(tab=0, hook=None):
         entry.config(bg='#f4fbf6' if typed == pref else '#f7d6d4')
 
     entry.bind('<KeyRelease>', on_key)
+    for seq in ('<<Paste>>', '<Control-v>', '<Control-V>', '<Shift-Insert>', '<Button-2>'):
+        entry.bind(seq, lambda e: 'break')
     B(brow, 'نص جديد', new_text).pack(side='right', padx=6)
     B(brow, 'إنهاء الآن', lambda: stop_typing(True), '#7a2e2e', 10).pack(side='right', padx=6)
 
@@ -263,7 +333,7 @@ def main(tab=0, hook=None):
     ps = {'phase': 'work', 'left': 25 * 60, 'running': False, 'end': 0, 'job': None}
     today = datetime.date.today().isoformat()
     sess = store['sessions']
-    ph_lbl = L(f_pomo, 'وقت المذاكرة', 16, '#7fe0b0', True)
+    ph_lbl = L(f_pomo, 'وقت المذاكرة', 16, GRN, True)
     ph_lbl.pack(pady=(14, 0))
     clock = tk.Label(f_pomo, text='25:00', bg=BG, fg=TXT, font=(FONT, 60, 'bold'))
     clock.pack(pady=4)
@@ -294,13 +364,13 @@ def main(tab=0, hook=None):
     def set_phase(p):
         ps['phase'] = p
         ps['left'] = (getm(w_var, 25) if p == 'work' else getm(b_var, 5)) * 60
-        ph_lbl.config(text='وقت المذاكرة' if p == 'work' else 'وقت الراحة', fg='#7fe0b0' if p == 'work' else '#e0c97f')
+        ph_lbl.config(text='وقت المذاكرة' if p == 'work' else 'وقت الراحة', fg=GRN if p == 'work' else YEL)
         clock.config(text=mmss(ps['left']))
 
     def ptick():
         if not ps['running']:
             return
-        left = ps['end'] - time.time()
+        left = ps['end'] - time.monotonic()
         if left <= 0:
             if ps['phase'] == 'work':
                 sess[today] = sess.get(today, 0) + 1
@@ -312,7 +382,7 @@ def main(tab=0, hook=None):
             else:
                 beep_pattern('break_end')
                 set_phase('work')
-            ps['end'] = time.time() + ps['left']
+            ps['end'] = time.monotonic() + ps['left']
             left = ps['left']
         clock.config(text=mmss(left))
         ps['job'] = root.after(200, ptick)
@@ -321,7 +391,7 @@ def main(tab=0, hook=None):
         if ps['running']:
             return
         ps['running'] = True
-        ps['end'] = time.time() + ps['left']
+        ps['end'] = time.monotonic() + ps['left']
         start_btn.config(state='disabled')
         pause_btn.config(state='normal')
         ptick()
@@ -329,7 +399,7 @@ def main(tab=0, hook=None):
     def p_pause():
         if not ps['running']:
             return
-        ps['left'] = max(ps['end'] - time.time(), 0)
+        ps['left'] = max(ps['end'] - time.monotonic(), 0)
         ps['running'] = False
         start_btn.config(state='normal', text='كمّل')
         pause_btn.config(state='disabled')
@@ -358,7 +428,69 @@ def main(tab=0, hook=None):
     upd_count()
     refresh_hist()
     new_text()
+    def apply_theme(name):
+        global BG, CARD, TXT, SUB, GRN, YEL
+        new = THEMES.get(name, THEMES['dark'])
+        old = dict(bg=BG, card=CARD, txt=TXT, sub=SUB, grn=GRN, yel=YEL)
+        mp = dict((old[k], new[k]) for k in old)
+        BG, CARD, TXT, SUB, GRN, YEL = new['bg'], new['card'], new['txt'], new['sub'], new['grn'], new['yel']
+
+        def walk(w):
+            is_card_btn = False
+            try:
+                is_card_btn = isinstance(w, tk.Button) and str(w.cget('bg')) == old['card']
+            except Exception:
+                pass
+            for opt in ('bg', 'fg', 'selectcolor', 'activebackground', 'activeforeground'):
+                try:
+                    v = str(w.cget(opt))
+                except Exception:
+                    continue
+                if v in mp:
+                    try:
+                        w.configure(**{opt: mp[v]})
+                    except Exception:
+                        pass
+            if is_card_btn:
+                try:
+                    w.configure(fg=TXT)
+                except Exception:
+                    pass
+            for c in w.winfo_children():
+                walk(c)
+        walk(root)
+        for k, b in tb.items():
+            b.config(bg=ACC if k == cur_tab['i'] else CARD, fg='white' if k == cur_tab['i'] else TXT)
+        theme_btn.config(text='وضع داكن' if name == 'light' else 'وضع فاتح')
+        cur_theme['n'] = name
+
+    def toggle_theme():
+        n = 'light' if cur_theme['n'] == 'dark' else 'dark'
+        apply_theme(n)
+        store['theme'] = n
+        save(store)
+
+    theme_btn = tk.Button(head, text='وضع فاتح', command=toggle_theme, bg=CARD, fg=TXT, relief='flat', font=(FONT, 9), cursor='hand2')
+    theme_btn.place(x=4, y=4)
+    if (theme or store.get('theme')) == 'light':
+        apply_theme('light')
     show(tab)
+
+    def on_close():
+        if ps['running']:
+            try:
+                from tkinter import messagebox
+                if not messagebox.askyesno(APP, 'التايمر شغال. تقفل البرنامج؟'):
+                    return
+            except Exception:
+                pass
+        root.destroy()
+    root.protocol('WM_DELETE_WINDOW', on_close)
+    try:
+        import pyi_splash
+        pyi_splash.close()
+    except Exception:
+        pass
     if hook:
         ns = dict(locals())
         root.after(800, lambda: hook(ns))
@@ -372,6 +504,25 @@ if __name__ == '__main__':
         print('data', DATA)
         sys.exit(0)
     t = 0
-    if len(sys.argv) > 2 and sys.argv[1] == '--tab':
-        t = int(sys.argv[2])
-    main(t)
+    th = None
+    size = None
+    args = sys.argv[1:]
+    for i, a in enumerate(args):
+        try:
+            if a == '--tab':
+                t = int(args[i + 1])
+            elif a == '--theme':
+                th = args[i + 1]
+        except Exception:
+            pass
+    try:
+        main(t, None, th)
+    except Exception:
+        import traceback
+        log_crash(traceback.format_exc())
+        try:
+            from tkinter import messagebox
+            messagebox.showerror('تنزيل', 'حصل خطأ غير متوقع. اتسجل في ملف crash.log جوه مجلد TanzilPC.')
+        except Exception:
+            pass
+        sys.exit(1)

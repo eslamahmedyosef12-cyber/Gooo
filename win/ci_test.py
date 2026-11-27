@@ -11,8 +11,8 @@ def ev(root, keysym='a'):
     class E: pass
     e = E(); e.keysym = keysym; return e
 def pump(root, secs):
-    end = time.time() + secs
-    while time.time() < end:
+    end = time.monotonic() + secs
+    while time.monotonic() < end:
         root.update(); time.sleep(0.02)
 def hook(ns):
     root = ns['root']; entry = ns['entry']; ts = ns['ts']; res = ns['res']
@@ -52,6 +52,13 @@ def hook(ns):
         # time limit expiry
         ns['lim_var'].set(30); entry.insert(0, 'a'); ns['on_key'](ev(root)); ts['start'] -= 31; pump(root, 0.6)
         check('time limit ends', ts['start'] is None)
+        # theme toggle
+        ns['toggle_theme'](); root.update()
+        check('light theme', ns['cur_theme']['n'] == 'light' and root.cget('bg') == T.THEMES['light']['bg'] and ns['store'].get('theme') == 'light')
+        ns['show'](1); root.update(); ns['show'](0); root.update()
+        check('tab colours light', ns['tb'][0].cget('bg') == T.ACC and ns['tb'][1].cget('bg') == T.THEMES['light']['card'])
+        ns['toggle_theme'](); root.update()
+        check('dark theme back', ns['cur_theme']['n'] == 'dark' and root.cget('bg') == T.THEMES['dark']['bg'])
         # tab switching + resize
         for i in (1, 0, 1, 0):
             ns['show'](i); root.update()
@@ -65,9 +72,9 @@ def hook(ns):
         check('running', ns['ps']['running'])
         ns['p_pause'](); l1 = ns['ps']['left']; pump(root, 0.5)
         check('paused holds', abs(ns['ps']['left'] - l1) < 0.01 and not ns['ps']['running'])
-        ns['p_start'](); ns['ps']['end'] = time.time() + 0.3; pump(root, 1.0)
+        ns['p_start'](); ns['ps']['end'] = time.monotonic() + 0.3; pump(root, 1.0)
         check('session counted + break', ns['ps']['phase'] == 'break' and ns['sess'].get(ns['today'], 0) == 1)
-        ns['ps']['end'] = time.time() + 0.3; pump(root, 1.0)
+        ns['ps']['end'] = time.monotonic() + 0.3; pump(root, 1.0)
         check('back to work', ns['ps']['phase'] == 'work')
         ns['p_reset']()
         # garbage in spinbox
@@ -88,6 +95,7 @@ def hook(ns):
     finally:
         root.destroy()
 T.DATA = os.path.join(tempfile.mkdtemp(), 'data.json')
+T.DIR = os.path.dirname(T.DATA)
 T.main(0, hook)
 # second launch: persisted data loads, corrupt file tolerated
 check('data file exists', os.path.exists(T.DATA))
