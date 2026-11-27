@@ -55,7 +55,66 @@ EN = [
     'Small steps taken every day lead to big results in the long run.',
 ]
 
+AR_EASY = [
+    'القراءة تفتح العقل.', 'من جد وجد.', 'العلم نور.', 'الوقت من ذهب.', 'اطلب العلم من المهد.',
+    'الصبر مفتاح الفرج.', 'خير الكلام ما قل ودل.', 'النظام يصنع النجاح.', 'ابدأ الآن ولا تؤجل.',
+    'التعب اليوم راحة الغد.', 'المذاكرة كل يوم تصنع الفرق.', 'اجتهد وتوكل على الله.',
+]
+EN_EASY = [
+    'Study a little every day.', 'Small steps win the race.', 'Focus on one task at a time.',
+    'Read, write and repeat.', 'Practice makes perfect.', 'Never give up on your goals.',
+    'Start now, not tomorrow.', 'Good habits build a bright future.', 'Take a short break and return.',
+    'Slow and steady wins.', 'Ask questions and keep learning.', 'Plan your day and follow it.',
+]
+AR_HARD = [
+    'في عام 2024 قرأت 12 كتابًا، وحللت 150 مسألة، وراجعت 8 دروس كاملة؛ فهل ستفعل أكثر منها؟',
+    'الجدول: السبت 9:30 رياضيات، الأحد 11:00 فيزياء، الاثنين 8:15 كيمياء، الثلاثاء 10:45 أحياء.',
+    'قال المعلم: "راجع الدرس (3) والتمرين (7) قبل الحصة"، ثم أضاف: النجاح يحتاج إلى 100% من الجهد!',
+    'اشتريت 3 كراسات بـ 45 جنيهًا، و5 أقلام بـ 20 جنيهًا؛ فكم دفعت في المجموع؟ الجواب: 65 جنيهًا.',
+    'الامتحان يبدأ الساعة 9:00 صباحًا، ومدته ساعتان ونصف؛ احضر قبل الموعد بربع ساعة على الأقل.',
+]
+EN_HARD = [
+    'In 2024, I read 12 books, solved 150 problems, and reviewed 8 full lessons; will you do more?',
+    'Schedule: Sat 9:30 Math, Sun 11:00 Physics, Mon 8:15 Chemistry, Tue 10:45 Biology (Room 4B).',
+    'The teacher said, "Review lesson (3) and exercise (7) before class," then added: success needs 100% effort!',
+    'He bought 3 notebooks for $4.50 each and 5 pens for $2.00 each; the total was $23.50, right?',
+    'The exam starts at 9:00 a.m. and lasts 2.5 hours; arrive at least 15 minutes early, please.',
+]
 AR = [re.sub('[\u064b-\u0652]', '', x) for x in AR]
+AR_EASY = [re.sub('[\u064b-\u0652]', '', x) for x in AR_EASY]
+AR_HARD = [re.sub('[\u064b-\u0652]', '', x) for x in AR_HARD]
+POOLS = {
+    ('ar', 'easy'): AR_EASY, ('en', 'easy'): EN_EASY,
+    ('ar', 'mid'): AR, ('en', 'mid'): EN,
+    ('ar', 'hard'): AR_HARD, ('en', 'hard'): EN_HARD,
+}
+CUSTOM_MAX = 250
+
+
+def clean_custom(text):
+    """normalise a user supplied passage: collapse whitespace, cap length. returns '' if too short."""
+    t = re.sub(r'\s+', ' ', text or '').strip()
+    t = re.sub('[\u064b-\u0652]', '', t)
+    if len(t) > CUSTOM_MAX:
+        t = t[:CUSTOM_MAX].rstrip()
+    return t if len(t) >= 5 else ''
+
+
+def has_arabic(t):
+    return any('\u0600' <= c <= '\u06ff' for c in t)
+
+
+def week_stats(history, today):
+    """last-7-days average wpm per day (oldest first), plus overall avg/best/count."""
+    days = [(today - datetime.timedelta(days=i)) for i in range(6, -1, -1)]
+    per = []
+    for d in days:
+        k = d.isoformat()
+        ws = [h['w'] for h in history if isinstance(h, dict) and str(h.get('d', ''))[:10] == k and isinstance(h.get('w'), (int, float))]
+        per.append((d, sum(ws) / len(ws) if ws else 0.0))
+    allw = [h['w'] for h in history if isinstance(h, dict) and isinstance(h.get('w'), (int, float))]
+    avg = sum(allw) / len(allw) if allw else 0.0
+    return per, avg, (max(allw) if allw else 0.0), len(allw)
 
 
 def _writable(d):
@@ -154,7 +213,7 @@ def beep_pattern(kind):
     threading.Thread(target=run, daemon=True).start()
 
 
-def main(tab=0, hook=None, theme=None):
+def main(tab=0, hook=None, theme=None, size=None):
     root = tk.Tk()
     global FONT
     try:
@@ -179,6 +238,8 @@ def main(tab=0, hook=None, theme=None):
     ww, wh = 640, min(560, sh - 70)
     root.geometry('%dx%d+%d+%d' % (ww, wh, max(0, (sw - ww) // 2), 5))
     root.minsize(600, 440)
+    if size:
+        root.geometry('%dx%d+0+0' % size)
     try:
         ico = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__))), 'icon.ico')
         root.iconbitmap(ico)
@@ -213,6 +274,7 @@ def main(tab=0, hook=None, theme=None):
     body.pack(fill='both', expand=True, padx=16)
     f_type = tk.Frame(body, bg=BG)
     f_pomo = tk.Frame(body, bg=BG)
+    f_stat = tk.Frame(body, bg=BG)
     tb = {}
     cur_tab = {'i': 0}
     cur_theme = {'n': 'dark'}
@@ -221,10 +283,15 @@ def main(tab=0, hook=None, theme=None):
         cur_tab['i'] = i
         f_type.pack_forget()
         f_pomo.pack_forget()
-        (f_type if i == 0 else f_pomo).pack(fill='both', expand=True)
+        f_stat.pack_forget()
+        (f_type if i == 0 else f_pomo if i == 1 else f_stat).pack(fill='both', expand=True)
+        if i == 2:
+            refresh_stats()
         for k, b in tb.items():
             b.config(bg=ACC if k == i else CARD, fg='white' if k == i else TXT)
 
+    tb[2] = B(tabs, 'إحصائياتي', lambda: show(2), CARD)
+    tb[2].pack(side='right', expand=True, fill='x', padx=3)
     tb[1] = B(tabs, 'تايمر المذاكرة', lambda: show(1), CARD)
     tb[1].pack(side='right', expand=True, fill='x', padx=3)
     tb[0] = B(tabs, 'مدرب الكتابة', lambda: show(0), ACC)
@@ -244,6 +311,48 @@ def main(tab=0, hook=None, theme=None):
         tk.Radiobutton(row, text='%d ث' % sec, variable=lim_var, value=sec, bg=BG, fg=TXT, selectcolor=CARD,
                        activebackground=BG, activeforeground=TXT, font=(FONT, 10)).pack(side='left', padx=4)
     L(row, ':المدة', 10, SUB).pack(side='left', padx=4)
+
+    row2 = tk.Frame(f_type, bg=BG)
+    row2.pack(fill='x', pady=2)
+    lvl_var = tk.StringVar(value='mid')
+    for txt, v in (('صعب', 'hard'), ('متوسط', 'mid'), ('سهل', 'easy')):
+        tk.Radiobutton(row2, text=txt, variable=lvl_var, value=v, bg=BG, fg=TXT, selectcolor=CARD, activebackground=BG,
+                       activeforeground=TXT, font=(FONT, 10), command=lambda: new_text()).pack(side='right', padx=6)
+    L(row2, ':المستوى', 10, SUB).pack(side='right', padx=4)
+
+    def set_custom(text):
+        t = clean_custom(text)
+        if not t:
+            return False
+        ts['custom'] = t
+        new_text(True)
+        return True
+
+    def custom_dialog():
+        top = tk.Toplevel(root)
+        top.title('اكتب نصك')
+        top.configure(bg=BG)
+        top.transient(root)
+        L(top, 'الصق أو اكتب النص اللي عايز تتمرن عليه (حتى %d حرف)' % CUSTOM_MAX, 10, SUB).pack(padx=12, pady=(10, 4))
+        box = tk.Text(top, width=48, height=6, font=(FONT, 12), wrap='word')
+        box.pack(padx=12, pady=4)
+        msg = L(top, '', 9, BAD)
+        msg.pack()
+
+        def ok():
+            if set_custom(box.get('1.0', 'end')):
+                top.destroy()
+            else:
+                msg.config(text='النص قصير جدًا (5 حروف على الأقل)')
+        fr = tk.Frame(top, bg=BG)
+        fr.pack(pady=8)
+        B(fr, 'ابدأ التمرين', ok).pack(side='right', padx=6)
+        B(fr, 'إلغاء', top.destroy, CARD, 10).pack(side='right', padx=6)
+        box.focus_set()
+        try:
+            top.grab_set()
+        except Exception:
+            pass
 
     pass_card = tk.Frame(f_type, bg=CARD, padx=14, pady=12)
     pass_card.pack(fill='x', pady=4)
@@ -267,12 +376,19 @@ def main(tab=0, hook=None, theme=None):
         for h in reversed(store['history'][-30:]):
             hist.insert('end', '%s  |  %s  |  %.0f كلمة/د  |  دقة %.0f%%' % (h['d'], 'عربي' if h['l'] == 'ar' else 'EN', h['w'], h['a']))
 
-    def new_text():
+    def new_text(keep_custom=False):
+        if not keep_custom:
+            ts['custom'] = None
         stop_typing(False)
         ts['lang'] = lang_var.get()
-        ts['passage'] = random.choice(AR if ts['lang'] == 'ar' else EN)
-        if random.random() < 0.5:
-            ts['passage'] += ' ' + random.choice(AR if ts['lang'] == 'ar' else EN)
+        if ts.get('custom'):
+            ts['passage'] = ts['custom']
+            ts['lang'] = 'ar' if has_arabic(ts['custom']) else 'en'
+        else:
+            pool = POOLS[(ts['lang'], lvl_var.get())]
+            ts['passage'] = random.choice(pool)
+            if lvl_var.get() == 'mid' and random.random() < 0.5:
+                ts['passage'] += ' ' + random.choice(pool)
         pass_lbl.config(text=ts['passage'])
         entry.config(state='normal', justify='right' if ts['lang'] == 'ar' else 'left', bg='#f4fbf6')
         entry.delete(0, 'end')
@@ -299,6 +415,7 @@ def main(tab=0, hook=None, theme=None):
             store['history'] = store['history'][-200:]
             save(store)
             refresh_hist()
+            refresh_stats()
             ts['start'] = None
 
     def tick():
@@ -327,29 +444,52 @@ def main(tab=0, hook=None, theme=None):
     for seq in ('<<Paste>>', '<Control-v>', '<Control-V>', '<Shift-Insert>', '<Button-2>'):
         entry.bind(seq, lambda e: 'break')
     B(brow, 'نص جديد', new_text).pack(side='right', padx=6)
+    B(brow, 'اكتب نصك', custom_dialog, CARD, 10).pack(side='right', padx=6)
     B(brow, 'إنهاء الآن', lambda: stop_typing(True), '#7a2e2e', 10).pack(side='right', padx=6)
 
     # ---------- pomodoro ----------
     ps = {'phase': 'work', 'left': 25 * 60, 'running': False, 'end': 0, 'job': None}
     today = datetime.date.today().isoformat()
     sess = store['sessions']
+    if not isinstance(store.get('mins'), dict):
+        store['mins'] = {}
+    mins = store['mins']
     ph_lbl = L(f_pomo, 'وقت المذاكرة', 16, GRN, True)
     ph_lbl.pack(pady=(14, 0))
-    clock = tk.Label(f_pomo, text='25:00', bg=BG, fg=TXT, font=(FONT, 60, 'bold'))
+    clock = tk.Label(f_pomo, text='25:00', bg=BG, fg=TXT, font=(FONT, 48, 'bold'))
     clock.pack(pady=4)
     cnt = L(f_pomo, '', 12, SUB)
     cnt.pack()
     set_row = tk.Frame(f_pomo, bg=BG)
-    set_row.pack(pady=10)
+    set_row.pack(pady=6)
     w_var = tk.IntVar(value=25)
     b_var = tk.IntVar(value=5)
     L(set_row, 'دقائق المذاكرة', 10, SUB).grid(row=0, column=3, padx=6)
     tk.Spinbox(set_row, from_=1, to=120, width=4, textvariable=w_var, font=(FONT, 12), justify='center').grid(row=0, column=2)
     L(set_row, 'دقائق الراحة', 10, SUB).grid(row=0, column=1, padx=6)
     tk.Spinbox(set_row, from_=1, to=60, width=4, textvariable=b_var, font=(FONT, 12), justify='center').grid(row=0, column=0)
+    l_var = tk.IntVar(value=15)
+    g_var = tk.IntVar(value=4)
+    set_row2 = tk.Frame(f_pomo, bg=BG)
+    set_row2.pack(pady=2)
+    L(set_row2, 'راحة طويلة (كل 4 جلسات)', 10, SUB).grid(row=0, column=3, padx=6)
+    tk.Spinbox(set_row2, from_=1, to=90, width=4, textvariable=l_var, font=(FONT, 12), justify='center').grid(row=0, column=2)
+    L(set_row2, 'هدف اليوم (جلسات)', 10, SUB).grid(row=0, column=1, padx=6)
+    tk.Spinbox(set_row2, from_=1, to=20, width=4, textvariable=g_var, font=(FONT, 12), justify='center').grid(row=0, column=0)
+    top_var = tk.IntVar(value=0)
+
+    def set_top():
+        try:
+            root.attributes('-topmost', bool(top_var.get()))
+        except Exception:
+            pass
+    tk.Checkbutton(f_pomo, text='خلي النافذة فوق باقي البرامج', variable=top_var, command=set_top, bg=BG, fg=SUB,
+                   selectcolor=CARD, activebackground=BG, activeforeground=TXT, font=(FONT, 9)).pack(pady=2)
 
     def upd_count():
-        cnt.config(text='جلسات اليوم: %d' % sess.get(today, 0))
+        n = sess.get(today, 0)
+        g = getm(g_var, 4)
+        cnt.config(text='جلسات اليوم: %d من %d%s  ·  دقائق المذاكرة: %d' % (n, g, '  (تم الهدف)' if n >= g else '', mins.get(today, 0)))
 
     def mmss(s):
         s = max(int(s + 0.999), 0)
@@ -363,8 +503,8 @@ def main(tab=0, hook=None, theme=None):
 
     def set_phase(p):
         ps['phase'] = p
-        ps['left'] = (getm(w_var, 25) if p == 'work' else getm(b_var, 5)) * 60
-        ph_lbl.config(text='وقت المذاكرة' if p == 'work' else 'وقت الراحة', fg=GRN if p == 'work' else YEL)
+        ps['left'] = (getm(w_var, 25) if p == 'work' else getm(l_var, 15) if p == 'long' else getm(b_var, 5)) * 60
+        ph_lbl.config(text={'work': 'وقت المذاكرة', 'break': 'وقت الراحة', 'long': 'راحة طويلة'}[p], fg=GRN if p == 'work' else YEL)
         clock.config(text=mmss(ps['left']))
 
     def ptick():
@@ -374,17 +514,22 @@ def main(tab=0, hook=None, theme=None):
         if left <= 0:
             if ps['phase'] == 'work':
                 sess[today] = sess.get(today, 0) + 1
+                mins[today] = mins.get(today, 0) + getm(w_var, 25)
                 store['sessions'] = sess
                 save(store)
                 upd_count()
                 beep_pattern('work_end')
-                set_phase('break')
+                set_phase('long' if sess[today] % 4 == 0 else 'break')
             else:
                 beep_pattern('break_end')
                 set_phase('work')
             ps['end'] = time.monotonic() + ps['left']
             left = ps['left']
         clock.config(text=mmss(left))
+        try:
+            root.title('%s  %s' % (mmss(left), APP))
+        except Exception:
+            pass
         ps['job'] = root.after(200, ptick)
 
     def p_start():
@@ -402,6 +547,7 @@ def main(tab=0, hook=None, theme=None):
         ps['left'] = max(ps['end'] - time.monotonic(), 0)
         ps['running'] = False
         start_btn.config(state='normal', text='كمّل')
+        root.title(APP)
         pause_btn.config(state='disabled')
 
     def p_reset():
@@ -412,6 +558,7 @@ def main(tab=0, hook=None, theme=None):
             except Exception:
                 pass
         set_phase('work')
+        root.title(APP)
         start_btn.config(state='normal', text='ابدأ')
         pause_btn.config(state='disabled')
 
@@ -423,10 +570,55 @@ def main(tab=0, hook=None, theme=None):
     pause_btn.pack(side='right', padx=6)
     B(pb, 'إعادة', p_reset, '#7a2e2e', 11).pack(side='right', padx=6)
     B(pb, 'جرّب الصوت', lambda: beep_pattern('work_end'), CARD, 9).pack(side='left', padx=6)
-    L(f_pomo, 'التغيير في الدقائق يظهر بعد الضغط على إعادة', 9, SUB).pack(pady=4)
+    L(f_pomo, 'التغيير في الدقائق يظهر بعد الضغط على إعادة', 9, SUB).pack(pady=2)
+
+    st_sum = L(f_stat, '', 12, TXT, True)
+    st_sum.pack(pady=(10, 2))
+    st_sum2 = L(f_stat, '', 10, SUB)
+    st_sum2.pack()
+    L(f_stat, 'متوسط سرعتك في آخر 7 أيام (كلمة/دقيقة)', 10, SUB).pack(pady=(10, 2))
+    chart = tk.Canvas(f_stat, width=520, height=170, bg=BG, highlightthickness=0)
+    chart.pack(pady=4)
+
+    def refresh_stats():
+        per, avg, best, n = week_stats(store['history'], datetime.date.today())
+        st_sum.config(text='المتوسط: %.0f   ·   أفضل نتيجة: %.0f   ·   عدد التمارين: %d' % (avg, best, n))
+        wk = sum(v for k, v in mins.items() if k >= (datetime.date.today() - datetime.timedelta(days=6)).isoformat() if isinstance(v, int))
+        ws = sum(v for k, v in sess.items() if k >= (datetime.date.today() - datetime.timedelta(days=6)).isoformat() if isinstance(v, int))
+        st_sum2.config(text='جلسات مذاكرة آخر 7 أيام: %d   ·   دقائق المذاكرة: %d' % (ws, wk))
+        chart.delete('all')
+        mx = max([v for _, v in per] + [10.0])
+        for i, (d, v) in enumerate(per):
+            x = 20 + i * 72
+            h = int(110 * v / mx)
+            chart.create_rectangle(x, 130 - h, x + 44, 130, fill=ACC, outline='')
+            if v:
+                chart.create_text(x + 22, 122 - h, text='%.0f' % v, fill=TXT, font=(FONT, 9))
+            chart.create_text(x + 22, 146, text=d.strftime('%d/%m'), fill=SUB, font=(FONT, 9))
+        chart.create_line(10, 130, 510, 130, fill=SUB)
+
+    def reset_stats():
+        try:
+            from tkinter import messagebox
+            if not messagebox.askyesno(APP, 'تمسح كل النتائج والإحصائيات؟ الأمر ده مينفعش يتراجع عنه.'):
+                return
+        except Exception:
+            return
+        wipe_stats()
+
+    def wipe_stats():
+        store['history'] = []
+        store['sessions'].clear()
+        mins.clear()
+        save(store)
+        refresh_hist()
+        refresh_stats()
+        upd_count()
+    B(f_stat, 'مسح الإحصائيات', reset_stats, '#7a2e2e', 10).pack(pady=8)
 
     upd_count()
     refresh_hist()
+    refresh_stats()
     new_text()
     def apply_theme(name):
         global BG, CARD, TXT, SUB, GRN, YEL
@@ -462,6 +654,8 @@ def main(tab=0, hook=None, theme=None):
         for k, b in tb.items():
             b.config(bg=ACC if k == cur_tab['i'] else CARD, fg='white' if k == cur_tab['i'] else TXT)
         theme_btn.config(text='وضع داكن' if name == 'light' else 'وضع فاتح')
+        cur_theme['n'] = name
+        refresh_stats()
         cur_theme['n'] = name
 
     def toggle_theme():
@@ -513,10 +707,12 @@ if __name__ == '__main__':
                 t = int(args[i + 1])
             elif a == '--theme':
                 th = args[i + 1]
+            elif a == '--size':
+                size = tuple(int(v) for v in args[i + 1].split('x'))
         except Exception:
             pass
     try:
-        main(t, None, th)
+        main(t, None, th, size)
     except Exception:
         import traceback
         log_crash(traceback.format_exc())

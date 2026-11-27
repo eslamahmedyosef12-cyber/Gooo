@@ -87,6 +87,54 @@ def hook(ns):
         # sound call does not crash
         T.beep_pattern('work_end'); T.beep_pattern('break_end'); pump(root, 1.5)
         check('beep ok', True)
+        # ---- v3 features ----
+        import datetime as _dt
+        for lang in ('ar', 'en'):
+            for lv in ('easy', 'mid', 'hard'):
+                ns['lang_var'].set(lang); ns['lvl_var'].set(lv); ns['new_text']()
+                check('passage %s %s' % (lang, lv), len(ts['passage']) >= 5 and ts['passage'] in sum([T.POOLS[(lang, lv)]], []) or lv == 'mid')
+        check('easy shorter than hard', max(len(x) for x in T.AR_EASY) < min(len(x) for x in T.AR_HARD))
+        check('all passages fit', all(len(x) <= 260 for v in T.POOLS.values() for x in v))
+        check('custom too short rejected', ns['set_custom']('ab') is False)
+        check('custom ok', ns['set_custom']('  hello   world \n again  ') is True and ts['passage'] == 'hello world again' and ts['lang'] == 'en')
+        check('custom arabic detected', ns['set_custom']('اكتب هذا النص الجديد') and ts['lang'] == 'ar')
+        check('custom capped', len(T.clean_custom('x' * 1000)) == T.CUSTOM_MAX)
+        ns['new_text'](); check('new text clears custom', ts['custom'] is None)
+        ns['set_custom']('hello world again'); ns['lim_var'].set(30)
+        entry.insert(0, 'hello world again'); ns['on_key'](ev(root)); pump(root, 0.6)
+        check('custom run finishes', ts['start'] is None and '100%' in res.cget('text'))
+        today = _dt.date.today()
+        per, avg, best, n = T.week_stats([], today)
+        check('stats empty', len(per) == 7 and avg == 0 and best == 0 and n == 0)
+        hh = [{'d': today.isoformat() + ' 10:00', 'w': 20.0, 'a': 90}, {'d': today.isoformat() + ' 11:00', 'w': 40.0, 'a': 95}, {'bad': 1}, 'x']
+        per, avg, best, n = T.week_stats(hh, today)
+        check('stats values', per[-1][1] == 30.0 and best == 40.0 and n == 2 and abs(avg - 30) < 1e-9)
+        ns['show'](2); root.update(); ns['refresh_stats']()
+        check('stats tab draws', len(ns['chart'].find_all()) > 10 and 'المتوسط' in ns['st_sum'].cget('text'))
+        ns['toggle_theme'](); root.update(); ns['toggle_theme'](); root.update()
+        check('stats theme toggle ok', True)
+        ns['wipe_stats'](); root.update()
+        check('wipe stats', ns['store']['history'] == [] and ns['hist'].size() == 0 and not ns['sess'])
+        # long break after 4th session
+        ns['show'](1); root.update()
+        ns['w_var'].set(1); ns['b_var'].set(1); ns['l_var'].set(2); ns['p_reset']()
+        for k in range(1, 5):
+            ns['p_start'](); ns['ps']['end'] = time.monotonic() + 0.2; pump(root, 0.8)
+            exp = 'long' if k == 4 else 'break'
+            check('after session %d -> %s' % (k, exp), ns['ps']['phase'] == exp)
+            if k < 4:
+                ns['ps']['end'] = time.monotonic() + 0.2; pump(root, 0.8)
+        check('long break 2 min', round(ns['ps']['left']) in (119, 120) or ns['ps']['left'] > 100)
+        check('minutes tracked', ns['mins'].get(ns['today'], 0) == 4)
+        check('goal text', 'من 4' in ns['cnt'].cget('text') and 'تم الهدف' in ns['cnt'].cget('text'))
+        ns['p_reset']()
+        ns['top_var'].set(1); ns['set_top'](); root.update(); ns['top_var'].set(0); ns['set_top']()
+        check('topmost toggle ok', True)
+        ns['p_start'](); pump(root, 0.5)
+        check('title shows clock', ':' in root.title().split()[0])
+        ns['p_reset'](); check('title reset', root.title() == T.APP)
+        ns['show'](0)
+        # ---- end v3 ----
         # persistence
         d = json.load(open(T.DATA, encoding='utf-8'))
         check('data persisted', len(d['history']) >= 1 and d['sessions'])
