@@ -204,8 +204,10 @@ def gui():
     root = tk.Tk()
     root.title(APP_NAME)
     root.configure(bg=BG)
-    root.geometry('560x640')
-    root.minsize(520, 600)
+    sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+    ww, wh = 560, min(610, sh - 70)
+    root.geometry('%dx%d+%d+%d' % (ww, wh, max(0, (sw - ww) // 2), 5))
+    root.minsize(520, 480)
     try:
         ico = os.path.join(getattr(sys, '_MEIPASS', base_dir()), 'icon.ico')
         if os.path.exists(ico):
@@ -230,8 +232,8 @@ def gui():
     lbl(head, 'صلِّ على النبي', 9, SUB).pack()
 
     def card(title):
-        f = tk.Frame(root, bg=CARD, padx=14, pady=10)
-        f.pack(fill='x', padx=16, pady=6)
+        f = tk.Frame(root, bg=CARD, padx=14, pady=6)
+        f.pack(fill='x', padx=16, pady=3)
         lbl(f, title, 11, '#7fe0ae', True).pack(fill='x')
         return f
 
@@ -314,7 +316,7 @@ def gui():
     tk.Button(c3, text='غيّر مكان الحفظ', command=change_out, bg=BG, fg=TXT, relief='flat', font=('Tahoma', 9)).pack(anchor='e', pady=(4, 0))
 
     c4 = tk.Frame(root, bg=BG)
-    c4.pack(fill='x', padx=16, pady=6)
+    c4.pack(fill='x', padx=16, pady=3)
     style = ttk.Style()
     try:
         style.theme_use('clam')
