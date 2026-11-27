@@ -46,7 +46,7 @@ jobs:
           Get-ChildItem $ucrt -Filter *.dll | ForEach-Object { Copy-Item $_.FullName $pk }
           if (Test-Path $vc) { Copy-Item $vc $pk }
           $rd = "الأول: فك الضغط عن المجلد كله (Extract All) وبعدين شغّل Tanzil-PC.exe من جواه. لا تشغله من داخل الـ ZIP. سيب ملفات الـ dll جنب البرنامج."
-          [System.IO.File]::WriteAllText("$pk\اقرأني.txt", $rd, (New-Object System.Text.UTF8Encoding($true)))
+          [System.IO.File]::WriteAllText("$PWD\$pk\README.txt", $rd, (New-Object System.Text.UTF8Encoding($true)))
           # verify: every DLL the exe imports (dumpbin) that is api-ms-win-crt-* / ucrtbase / vcruntime is present beside it
           $vsw = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           $dump = $null
