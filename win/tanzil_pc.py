@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""تنزيل PC: مدرب كتابة + تايمر مذاكرة. أوفلاين بالكامل. Python 3.8."""
+"""تنزيل PC: مدرب كتابة + تايمر مذاكرة. أوفلاين بالكامل. متوافق مع Python 3.7."""
 import json
 import os
 import random
@@ -250,13 +250,21 @@ def main(tab=0, hook=None, theme=None, size=None):
         store['history'] = []
     if not isinstance(store.get('sessions'), dict):
         store['sessions'] = {}
+    if not isinstance(store.get('tasks'), list):
+        store['tasks'] = []
+    if not isinstance(store.get('tasks'), list):
+        store['tasks'] = []
+    if not isinstance(store.get('lessons'), list):
+        store['lessons'] = []
+    if not isinstance(store.get('daily_goal'), int):
+        store['daily_goal'] = 120
 
     def L(parent, text, size=11, color=TXT, bold=False, **kw):
         return tk.Label(parent, text=text, bg=kw.pop('bg', BG), fg=color, font=(FONT, size, 'bold' if bold else 'normal'), **kw)
 
     def B(parent, text, cmd, color=ACC, size=11, **kw):
         return tk.Button(parent, text=text, command=cmd, bg=color, fg='white', activebackground='#38b57c', activeforeground='white',
-                         relief='flat', font=(FONT, size, 'bold'), padx=14, pady=4, cursor='hand2', **kw)
+                         relief='flat', font=(FONT, size, 'bold'), padx=kw.pop('bpad', 14), pady=4, cursor='hand2', **kw)
 
     # header
     head = tk.Frame(root, bg=BG)
@@ -275,6 +283,8 @@ def main(tab=0, hook=None, theme=None, size=None):
     f_type = tk.Frame(body, bg=BG)
     f_pomo = tk.Frame(body, bg=BG)
     f_stat = tk.Frame(body, bg=BG)
+    f_tasks = tk.Frame(body, bg=BG)
+    f_subjects = tk.Frame(body, bg=BG)
     tb = {}
     cur_tab = {'i': 0}
     cur_theme = {'n': 'dark'}
@@ -284,17 +294,29 @@ def main(tab=0, hook=None, theme=None, size=None):
         f_type.pack_forget()
         f_pomo.pack_forget()
         f_stat.pack_forget()
-        (f_type if i == 0 else f_pomo if i == 1 else f_stat).pack(fill='both', expand=True)
+        f_tasks.pack_forget()
+        f_subjects.pack_forget()
+        target = (f_type if i == 0 else f_pomo if i == 1 else
+                  f_stat if i == 2 else f_tasks if i == 3 else f_subjects)
+        target.pack(fill='both', expand=True)
         if i == 2:
             refresh_stats()
+        if i == 3:
+            refresh_tasks()
+        if i == 4:
+            refresh_subjects()
         for k, b in tb.items():
             b.config(bg=ACC if k == i else CARD, fg='white' if k == i else TXT)
 
-    tb[2] = B(tabs, 'إحصائياتي', lambda: show(2), CARD)
+    tb[4] = B(tabs, 'موادي', lambda: show(4), CARD, 10, bpad=4)
+    tb[4].pack(side='right', expand=True, fill='x', padx=3)
+    tb[3] = B(tabs, 'مهامي', lambda: show(3), CARD, 10, bpad=4)
+    tb[3].pack(side='right', expand=True, fill='x', padx=3)
+    tb[2] = B(tabs, 'إحصائياتي', lambda: show(2), CARD, 10, bpad=4)
     tb[2].pack(side='right', expand=True, fill='x', padx=3)
-    tb[1] = B(tabs, 'تايمر المذاكرة', lambda: show(1), CARD)
+    tb[1] = B(tabs, 'تايمر المذاكرة', lambda: show(1), CARD, 10, bpad=4)
     tb[1].pack(side='right', expand=True, fill='x', padx=3)
-    tb[0] = B(tabs, 'مدرب الكتابة', lambda: show(0), ACC)
+    tb[0] = B(tabs, 'مدرب الكتابة', lambda: show(0), ACC, 10, bpad=4)
     tb[0].pack(side='right', expand=True, fill='x', padx=3)
 
     # ---------- typing ----------
@@ -490,6 +512,10 @@ def main(tab=0, hook=None, theme=None, size=None):
         n = sess.get(today, 0)
         g = getm(g_var, 4)
         cnt.config(text='جلسات اليوم: %d من %d%s  ·  دقائق المذاكرة: %d' % (n, g, '  (تم الهدف)' if n >= g else '', mins.get(today, 0)))
+        try:
+            refresh_tasks()
+        except Exception:
+            pass
 
     def mmss(s):
         s = max(int(s + 0.999), 0)
@@ -616,9 +642,317 @@ def main(tab=0, hook=None, theme=None, size=None):
         upd_count()
     B(f_stat, 'مسح الإحصائيات', reset_stats, '#7a2e2e', 10).pack(pady=8)
 
+
+    # ---------- tasks and daily goal ----------
+    L(f_tasks, 'مركز المهام والأهداف', 17, GRN, True).pack(pady=(10, 4))
+    L(f_tasks, 'اكتب مهام مذاكرتك، وحدد ما أنجزته، وتابع هدفك اليومي.', 9, SUB).pack()
+
+    goal_box = tk.Frame(f_tasks, bg=CARD, padx=10, pady=8)
+    goal_box.pack(fill='x', pady=8)
+    goal_var = tk.IntVar(value=store.get('daily_goal', 120))
+    L(goal_box, 'هدف المذاكرة اليومي بالدقائق', 10, TXT, True, bg=CARD).pack(side='right', padx=6)
+    goal_spin = tk.Spinbox(goal_box, from_=15, to=720, increment=15, width=5,
+                           textvariable=goal_var, font=(FONT, 11), justify='center')
+    goal_spin.pack(side='right', padx=5)
+    goal_progress = L(goal_box, '', 10, GRN, True, bg=CARD)
+    goal_progress.pack(side='left', padx=6)
+
+    task_entry = tk.Entry(f_tasks, font=(FONT, 12), bg='#f4fbf6', fg='#102016',
+                          relief='flat', justify='right')
+    task_entry.pack(fill='x', pady=(4, 3), ipady=6)
+
+    task_list = tk.Listbox(f_tasks, bg=CARD, fg=TXT, font=(FONT, 11),
+                           relief='flat', height=9, highlightthickness=0,
+                           selectbackground=ACC, activestyle='none', justify='right')
+    task_list.pack(fill='both', expand=True, pady=4)
+
+    task_hint = L(f_tasks, 'المهمة المنجزة تظهر بعلامة [x]، وغير المنجزة بعلامة [  ]', 9, SUB)
+    task_hint.pack()
+
+    def refresh_tasks():
+        task_list.delete(0, 'end')
+        tasks = store.get('tasks', [])
+        for task in tasks:
+            if isinstance(task, dict):
+                mark = '[x]' if task.get('done') else '[  ]'
+                task_list.insert('end', '%s  %s' % (mark, task.get('title', 'مهمة بدون اسم')))
+        try:
+            goal = max(15, int(goal_var.get()))
+        except Exception:
+            goal = 120
+        done_minutes = store.get('mins', {}).get(datetime.date.today().isoformat(), 0)
+        pct = min(100, int(100.0 * done_minutes / max(goal, 1)))
+        goal_progress.config(text='إنجاز الهدف: %d%%  (%d / %d دقيقة)' % (pct, done_minutes, goal))
+
+    def add_task():
+        title = task_entry.get().strip()
+        if not title:
+            task_hint.config(text='اكتب اسم المهمة أولًا', fg=BAD)
+            return
+        if len(title) > 100:
+            title = title[:100]
+        store.setdefault('tasks', []).append({'title': title, 'done': False,
+                                               'created': datetime.date.today().isoformat()})
+        save(store)
+        task_entry.delete(0, 'end')
+        task_hint.config(text='تمت إضافة المهمة', fg=GRN)
+        refresh_tasks()
+
+    def selected_task_index():
+        selected = task_list.curselection()
+        return selected[0] if selected else None
+
+    def toggle_task():
+        idx = selected_task_index()
+        if idx is None or idx >= len(store.get('tasks', [])):
+            task_hint.config(text='اختار مهمة من القائمة أولًا', fg=BAD)
+            return
+        task = store['tasks'][idx]
+        if isinstance(task, dict):
+            task['done'] = not bool(task.get('done'))
+            save(store)
+            refresh_tasks()
+            task_list.selection_set(idx)
+
+    def delete_task():
+        idx = selected_task_index()
+        if idx is None or idx >= len(store.get('tasks', [])):
+            task_hint.config(text='اختار مهمة لحذفها أولًا', fg=BAD)
+            return
+        del store['tasks'][idx]
+        save(store)
+        refresh_tasks()
+        task_hint.config(text='تم حذف المهمة', fg=SUB)
+
+    def save_goal():
+        try:
+            value = max(15, min(720, int(goal_var.get())))
+        except Exception:
+            value = 120
+        store['daily_goal'] = value
+        goal_var.set(value)
+        save(store)
+        refresh_tasks()
+        task_hint.config(text='تم حفظ هدفك اليومي', fg=GRN)
+
+    task_buttons = tk.Frame(f_tasks, bg=BG)
+    task_buttons.pack(fill='x', pady=5)
+    B(task_buttons, 'إضافة مهمة', add_task, ACC, 10).pack(side='right', padx=3)
+    B(task_buttons, 'إنجاز / تراجع', toggle_task, CARD, 10).pack(side='right', padx=3)
+    B(task_buttons, 'حذف المهمة', delete_task, '#7a2e2e', 10).pack(side='right', padx=3)
+    B(task_buttons, 'حفظ الهدف', save_goal, CARD, 10).pack(side='left', padx=3)
+    task_entry.bind('<Return>', lambda e: add_task())
+
+    # ---------- subject and lesson tracker ----------
+    if not isinstance(store.get('lessons'), list):
+        store['lessons'] = []
+
+    L(f_subjects, 'خطة المواد والدروس', 17, GRN, True).pack(pady=(10, 3))
+    L(f_subjects, 'سجّل كل درس، وحدد ما أنهيته، وتابع تقدمك في المنهج.', 9, SUB).pack()
+
+    subject_entry = tk.Entry(f_subjects, font=(FONT, 11), bg='#f4fbf6',
+                             fg='#102016', relief='flat', justify='right')
+    subject_entry.pack(fill='x', pady=(8, 3), ipady=5)
+    subject_entry.insert(0, 'اسم المادة')
+
+    lesson_entry = tk.Entry(f_subjects, font=(FONT, 11), bg='#f4fbf6',
+                            fg='#102016', relief='flat', justify='right')
+    lesson_entry.pack(fill='x', pady=3, ipady=5)
+    lesson_entry.insert(0, 'اسم الدرس')
+
+    lesson_list = tk.Listbox(f_subjects, bg=CARD, fg=TXT, font=(FONT, 10),
+                             relief='flat', height=8, highlightthickness=0,
+                             selectbackground=ACC, activestyle='none', justify='right')
+    lesson_list.pack(fill='both', expand=True, pady=4)
+
+    lesson_summary = L(f_subjects, '', 9, SUB)
+    lesson_summary.pack()
+
+    def refresh_subjects():
+        lesson_list.delete(0, 'end')
+        lessons = store.get('lessons', [])
+        total = 0
+        completed = 0
+        for item in lessons:
+            if not isinstance(item, dict):
+                continue
+            total += 1
+            done = bool(item.get('done'))
+            if done:
+                completed += 1
+            mark = '[x]' if done else '[  ]'
+            lesson_list.insert('end', '%s  %s  -  %s' % (
+                mark, item.get('subject', 'مادة'), item.get('title', 'درس')))
+        pct = int(100.0 * completed / total) if total else 0
+        lesson_summary.config(text='إنجاز المنهج: %d%%  ·  %d من %d درس' %
+                              (pct, completed, total))
+
+    def add_lesson():
+        subject = subject_entry.get().strip()
+        title = lesson_entry.get().strip()
+        if subject == 'اسم المادة':
+            subject = ''
+        if title == 'اسم الدرس':
+            title = ''
+        if not subject or not title:
+            lesson_summary.config(text='اكتب اسم المادة واسم الدرس أولًا', fg=BAD)
+            return
+        if len(subject) > 50 or len(title) > 100:
+            lesson_summary.config(text='اسم المادة 50 حرفًا والدرس 100 حرف كحد أقصى', fg=BAD)
+            return
+        store.setdefault('lessons', []).append({
+            'subject': subject, 'title': title, 'done': False,
+            'created': datetime.date.today().isoformat()
+        })
+        save(store)
+        subject_entry.delete(0, 'end')
+        lesson_entry.delete(0, 'end')
+        refresh_subjects()
+        lesson_summary.config(text='تمت إضافة الدرس وحفظه', fg=GRN)
+
+    def selected_lesson_index():
+        selected = lesson_list.curselection()
+        return selected[0] if selected else None
+
+    def toggle_lesson():
+        idx = selected_lesson_index()
+        lessons = store.get('lessons', [])
+        if idx is None or idx >= len(lessons):
+            lesson_summary.config(text='اختار درسًا من القائمة أولًا', fg=BAD)
+            return
+        item = lessons[idx]
+        if isinstance(item, dict):
+            item['done'] = not bool(item.get('done'))
+            item['completed'] = (datetime.date.today().isoformat()
+                                 if item['done'] else '')
+            save(store)
+            refresh_subjects()
+            lesson_list.selection_set(idx)
+
+    def delete_lesson():
+        idx = selected_lesson_index()
+        lessons = store.get('lessons', [])
+        if idx is None or idx >= len(lessons):
+            lesson_summary.config(text='اختار درسًا لحذفه أولًا', fg=BAD)
+            return
+        del lessons[idx]
+        save(store)
+        refresh_subjects()
+        lesson_summary.config(text='تم حذف الدرس', fg=SUB)
+
+    lesson_buttons = tk.Frame(f_subjects, bg=BG)
+    lesson_buttons.pack(fill='x', pady=5)
+    B(lesson_buttons, 'إضافة درس', add_lesson, ACC, 9).pack(side='right', padx=3)
+    B(lesson_buttons, 'تم / لم يتم', toggle_lesson, CARD, 9).pack(side='right', padx=3)
+    B(lesson_buttons, 'حذف', delete_lesson, '#7a2e2e', 9).pack(side='right', padx=3)
+    lesson_entry.bind('<Return>', lambda e: add_lesson())
+
+    def clear_ph(ent, ph):
+        def f(e):
+            if ent.get() == ph:
+                ent.delete(0, 'end')
+        ent.bind('<FocusIn>', f)
+    clear_ph(subject_entry, 'اسم المادة')
+    clear_ph(lesson_entry, 'اسم الدرس')
+    refresh_subjects()
+
+    def apply_restore(incoming):
+        """replace data with a sanitised copy of `incoming`; keeps the live sess/mins dict objects."""
+        if not isinstance(incoming, dict):
+            raise ValueError('صيغة الملف غير صحيحة')
+
+        def ints(d):
+            out = {}
+            if isinstance(d, dict):
+                for k, v in d.items():
+                    if isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) and v >= 0:
+                        out[k] = v
+            return out
+
+        def good_hist(h):
+            return (isinstance(h, dict) and isinstance(h.get('d'), str) and h.get('l') in ('ar', 'en')
+                    and isinstance(h.get('w'), (int, float)) and isinstance(h.get('a'), (int, float)))
+        new_hist = [h for h in incoming.get('history', []) if good_hist(h)][-200:] if isinstance(incoming.get('history'), list) else []
+        new_tasks = [t for t in incoming.get('tasks', []) if isinstance(t, dict)] if isinstance(incoming.get('tasks'), list) else []
+        new_less = [t for t in incoming.get('lessons', []) if isinstance(t, dict)] if isinstance(incoming.get('lessons'), list) else []
+        new_s, new_m = ints(incoming.get('sessions')), ints(incoming.get('mins'))
+        theme_v = incoming.get('theme') if incoming.get('theme') in ('dark', 'light') else None
+        goal_v = incoming.get('daily_goal')
+        store.clear()
+        sess.clear()
+        sess.update(new_s)
+        mins.clear()
+        mins.update(new_m)
+        store['history'] = new_hist
+        store['sessions'] = sess
+        store['mins'] = mins
+        store['tasks'] = new_tasks
+        store['lessons'] = new_less
+        if theme_v:
+            store['theme'] = theme_v
+        if isinstance(goal_v, int) and not isinstance(goal_v, bool):
+            store['daily_goal'] = max(15, min(720, goal_v))
+            goal_var.set(store['daily_goal'])
+        save(store)
+
+    # Backup and restore: user chooses the destination/source file.
+    def backup_data():
+        try:
+            from tkinter import filedialog, messagebox
+            name = filedialog.asksaveasfilename(
+                parent=root, title='حفظ نسخة احتياطية',
+                defaultextension='.json',
+                filetypes=[('ملفات JSON', '*.json'), ('كل الملفات', '*.*')],
+                initialfile='TanzilPC_backup.json')
+            if not name:
+                return
+            with open(name, 'w', encoding='utf-8') as f:
+                json.dump(store, f, ensure_ascii=False, indent=2)
+            messagebox.showinfo(APP, 'تم حفظ النسخة الاحتياطية بنجاح.')
+        except Exception as exc:
+            try:
+                from tkinter import messagebox
+                messagebox.showerror(APP, 'تعذر حفظ النسخة: %s' % exc)
+            except Exception:
+                pass
+
+    def restore_data():
+        try:
+            from tkinter import filedialog, messagebox
+            name = filedialog.askopenfilename(
+                parent=root, title='استعادة نسخة احتياطية',
+                filetypes=[('ملفات JSON', '*.json'), ('كل الملفات', '*.*')])
+            if not name:
+                return
+            if not messagebox.askyesno(APP, 'الاستعادة ستستبدل البيانات الحالية. هل تريد المتابعة؟'):
+                return
+            with open(name, 'r', encoding='utf-8') as f:
+                incoming = json.load(f)
+            if not isinstance(incoming, dict):
+                raise ValueError('صيغة الملف غير صحيحة')
+            apply_restore(incoming)
+            refresh_hist()
+            refresh_stats()
+            upd_count()
+            refresh_tasks()
+            refresh_subjects()
+            messagebox.showinfo(APP, 'تمت استعادة البيانات بنجاح.')
+        except Exception as exc:
+            try:
+                from tkinter import messagebox
+                messagebox.showerror(APP, 'تعذر استعادة النسخة: %s' % exc)
+            except Exception:
+                pass
+
+    backup_row = tk.Frame(f_stat, bg=BG)
+    backup_row.pack(pady=3)
+    B(backup_row, 'نسخ احتياطي', backup_data, CARD, 9).pack(side='right', padx=4)
+    B(backup_row, 'استعادة نسخة', restore_data, CARD, 9).pack(side='right', padx=4)
+
     upd_count()
     refresh_hist()
     refresh_stats()
+    refresh_tasks()
     new_text()
     def apply_theme(name):
         global BG, CARD, TXT, SUB, GRN, YEL
@@ -678,6 +1012,11 @@ def main(tab=0, hook=None, theme=None, size=None):
                     return
             except Exception:
                 pass
+        try:
+            store['daily_goal'] = max(15, min(720, int(goal_var.get())))
+            save(store)
+        except Exception:
+            pass
         root.destroy()
     root.protocol('WM_DELETE_WINDOW', on_close)
     try:

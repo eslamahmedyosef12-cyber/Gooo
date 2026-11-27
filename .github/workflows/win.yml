@@ -92,7 +92,9 @@ jobs:
             @('--tab','0','--theme','dark'),
             @('--tab','1','--theme','light'),
             @('--tab','2','--theme','dark'),
-            @('--tab','1','--theme','dark','--size','600x440'),
+            @('--tab','3','--theme','dark'),
+            @('--tab','4','--theme','light'),
+            @('--tab','3','--theme','dark','--size','600x440'),
             @('--tab','0','--theme','light','--size','600x440')
           )
           $t = 0

@@ -135,9 +135,63 @@ def hook(ns):
         ns['p_reset'](); check('title reset', root.title() == T.APP)
         ns['show'](0)
         # ---- end v3 ----
+        # ---- v4: tasks, lessons, backup/restore ----
+        ns['show'](3); root.update()
+        check('tasks tab shown', ns['f_tasks'].winfo_ismapped())
+        ns['task_entry'].delete(0, 'end'); ns['add_task'](); 
+        check('empty task rejected', ns['store'].get('tasks') == [])
+        ns['task_entry'].insert(0, 'مراجعة الفصل الأول'); ns['add_task']()
+        ns['task_entry'].insert(0, 'x' * 300); ns['add_task']()
+        check('tasks added + capped', len(ns['store']['tasks']) == 2 and len(ns['store']['tasks'][1]['title']) == 100 and ns['task_list'].size() == 2)
+        ns['task_list'].selection_set(0); ns['toggle_task'](); root.update()
+        check('task done', ns['store']['tasks'][0]['done'] is True and '[x]' in ns['task_list'].get(0))
+        ns['toggle_task']()
+        check('toggle without selection safe', True)
+        ns['task_list'].selection_set(1); ns['delete_task']()
+        check('task deleted', len(ns['store']['tasks']) == 1)
+        ns['goal_var'].set(60); ns['save_goal'](); ns['mins'][ns['today']] = 30; ns['refresh_tasks']()
+        check('goal progress', '50%' in ns['goal_progress'].cget('text') and ns['store']['daily_goal'] == 60)
+        ns['goal_var'].set(5); ns['save_goal']()
+        check('goal clamped', ns['store']['daily_goal'] == 15)
+        ns['show'](4); root.update()
+        ns['add_lesson']()
+        check('placeholder lesson rejected', ns['store']['lessons'] == [])
+        ns['subject_entry'].delete(0, 'end'); ns['subject_entry'].insert(0, 'فيزياء')
+        ns['lesson_entry'].delete(0, 'end'); ns['lesson_entry'].insert(0, 'الحركة')
+        ns['add_lesson']()
+        check('lesson added', len(ns['store']['lessons']) == 1 and ns['lesson_list'].size() == 1)
+        ns['lesson_list'].selection_set(0); ns['toggle_lesson']()
+        check('lesson done 100%', ns['store']['lessons'][0]['done'] and '100%' in ns['lesson_summary'].cget('text'))
+        ns['delete_lesson']()
+        check('lesson deleted', ns['store']['lessons'] == [])
+        for i in (0, 1, 2, 3, 4, 3, 2, 1, 0):
+            ns['show'](i); root.update()
+        for th in (1, 2):
+            ns['toggle_theme']()
+            for i in (0, 1, 2, 3, 4):
+                ns['show'](i); root.update()
+        check('all tabs both themes ok', ns['cur_theme']['n'] == 'dark')
+        # restore: sanitising + live dict identity
+        sess0, mins0 = ns['sess'], ns['mins']
+        ns['apply_restore']({'history': [{'d': '2026-01-01 10:00', 'l': 'ar', 'w': 33.0, 'a': 90.0}, {'bad': 1}, 'x'],
+                             'sessions': {'2026-01-01': 3, 'x': 'bad', 'y': True}, 'mins': {'2026-01-01': 75},
+                             'tasks': [{'title': 't', 'done': False}, 5], 'lessons': 'junk', 'theme': 'light', 'daily_goal': 9999})
+        root.update()
+        check('restore sanitised', len(ns['store']['history']) == 1 and ns['sess'] == {'2026-01-01': 3} and ns['mins'] == {'2026-01-01': 75}
+              and ns['store']['tasks'] == [{'title': 't', 'done': False}] and ns['store']['lessons'] == [] and ns['store']['daily_goal'] == 720)
+        check('restore keeps live dicts', ns['store']['sessions'] is sess0 and ns['store']['mins'] is mins0 and ns['sess'] is sess0)
+        ns['refresh_hist'](); ns['refresh_stats'](); ns['upd_count'](); ns['refresh_tasks'](); ns['refresh_subjects']()
+        ns['p_start'](); ns['ps']['end'] = time.monotonic() + 0.2; pump(root, 0.8); ns['p_reset']()
+        check('session after restore adds to restored', ns['store']['sessions'].get(ns['today'], 0) == 1 and ns['store']['sessions'].get('2026-01-01') == 3)
+        try:
+            ns['apply_restore']([1, 2]); check('restore non-dict rejected', False)
+        except ValueError:
+            check('restore non-dict rejected', True)
+        ns['show'](0)
+        # ---- end v4 ----
         # persistence
         d = json.load(open(T.DATA, encoding='utf-8'))
-        check('data persisted', d['sessions'] and d['mins'] and d['history'] == [])
+        check('data persisted', d['sessions'] and d['mins'] and len(d['history']) == 1 and d['tasks'])
     except Exception as e:
         import traceback; traceback.print_exc(); fails.append('exception %r' % e)
     finally:
