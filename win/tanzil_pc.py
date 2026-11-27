@@ -223,7 +223,7 @@ def main(tab=0, hook=None, theme=None):
         f_pomo.pack_forget()
         (f_type if i == 0 else f_pomo).pack(fill='both', expand=True)
         for k, b in tb.items():
-            b.config(bg=ACC if k == i else CARD)
+            b.config(bg=ACC if k == i else CARD, fg='white' if k == i else TXT)
 
     tb[1] = B(tabs, 'تايمر المذاكرة', lambda: show(1), CARD)
     tb[1].pack(side='right', expand=True, fill='x', padx=3)
