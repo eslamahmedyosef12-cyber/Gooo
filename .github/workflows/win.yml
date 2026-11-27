@@ -28,7 +28,7 @@ jobs:
           pip install pyinstaller==5.13.2
           cd win
           pyinstaller --onefile --windowed --name Tanzil-PC --icon icon.ico --add-data "icon.ico;." --splash splash.png tanzil_pc.py
-          $txt = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes("dist\Tanzil-PC.exe"))
+          $txt = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes("$PWD\dist\Tanzil-PC.exe"))
           foreach ($n in 'api-ms-win-crt-runtime','api-ms-win-crt-heap','ucrtbase.dll','vcruntime140.dll','python37.dll','tcl86t.dll') { "$n bundled: $($txt.Contains($n))" }
           Compress-Archive -Path dist\Tanzil-PC.exe -DestinationPath Tanzil-PC-win32.zip
           Get-ChildItem dist, Tanzil-PC-win32.zip | Format-Table Name, Length
