@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tag: {description: 'release tag', required: true, default: 'tanzil-pc-v1'}
+      release: {description: 'publish release', required: true, default: 'false'}
 permissions:
   contents: write
 jobs:
@@ -46,6 +47,42 @@ jobs:
           cd win\dist
           $p = Start-Process -FilePath .\Tanzil-PC.exe -ArgumentList '--selftest' -Wait -PassThru -NoNewWindow
           "exit $($p.ExitCode)"
+      - name: robustness
+        shell: pwsh
+        run: |
+          $exe = "$PWD\win\dist\Tanzil-PC.exe"
+          function Probe($label, $path, $secs) {
+            $p = Start-Process -FilePath $path -PassThru
+            Start-Sleep -Seconds $secs
+            $alive = -not $p.HasExited
+            $all = Get-Process -Name 'Tanzil-PC' -ErrorAction SilentlyContinue
+            $ws = [math]::Round((($all | Measure-Object WorkingSet64 -Sum).Sum)/1MB,1)
+            $pm = [math]::Round((($all | Measure-Object PrivateMemorySize64 -Sum).Sum)/1MB,1)
+            "$label alive=$alive procs=$($all.Count) workingset_MB=$ws private_MB=$pm"
+            $all | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+          }
+          # A: memory
+          Probe 'RAM' $exe 10
+          # B: arabic + spaces path
+          $d = Join-Path $env:RUNNER_TEMP 'مجلد تجربة فيه مسافات'
+          New-Item -ItemType Directory -Force $d | Out-Null
+          Copy-Item $exe "$d\Tanzil-PC.exe"
+          Probe 'ARABIC_PATH' "$d\Tanzil-PC.exe" 8
+          # C: unwritable APPDATA
+          $env:APPDATA = 'Z:\nope\x'
+          $d2 = Join-Path $env:RUNNER_TEMP 'portable'
+          New-Item -ItemType Directory -Force $d2 | Out-Null
+          Copy-Item $exe "$d2\Tanzil-PC.exe"
+          Probe 'APPDATA_UNWRITABLE' "$d2\Tanzil-PC.exe" 8
+          "fallback dir created next to exe: $(Test-Path "$d2\TanzilData")"
+          # D: corrupt data file
+          $env:APPDATA = Join-Path $env:RUNNER_TEMP 'ad'
+          New-Item -ItemType Directory -Force "$env:APPDATA\TanzilPC" | Out-Null
+          Set-Content -Path "$env:APPDATA\TanzilPC\data.json" -Value '{{{ corrupt'
+          Probe 'CORRUPT_DATA' $exe 8
+          "corrupt file moved to .bad: $(Test-Path "$env:APPDATA\TanzilPC\data.json.bad")"
+          "crash.log exists: $(Test-Path "$env:APPDATA\TanzilPC\crash.log")"
       - name: gui screenshots
         shell: pwsh
         run: |
@@ -68,6 +105,7 @@ jobs:
           name: shots
           path: shot*.png
       - name: release
+        if: ${{ inputs.release == 'true' }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
