@@ -1,0 +1,68 @@
+name: win-compressor
+on:
+  workflow_dispatch:
+    inputs:
+      tag: {description: 'release tag', required: true, default: 'tanzil-compressor-v1'}
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+          architecture: 'x86'
+      - name: build exe
+        shell: pwsh
+        run: |
+          python --version
+          python -c "import struct;print(struct.calcsize('P')*8,'bit python')"
+          pip install pyinstaller==5.13.2
+          cd win
+          Invoke-WebRequest -Uri "https://github.com/sudo-nautilus/FFmpeg-Builds-Win32/releases/download/latest/ffmpeg-n4.4-latest-win32-gpl-4.4.zip" -OutFile ff.zip
+          Expand-Archive ff.zip -DestinationPath ffx
+          Copy-Item (Get-ChildItem -Recurse ffx -Filter ffmpeg.exe | Select-Object -First 1).FullName ffmpeg.exe
+          .\ffmpeg.exe -version | Select-Object -First 1
+          pyinstaller --onefile --windowed --name Tanzil --icon icon.ico --add-data "icon.ico;." tanzil_compress.py
+          mkdir pkg
+          Copy-Item dist\Tanzil.exe pkg\
+          Copy-Item ffmpeg.exe pkg\
+          "افتح Tanzil.exe. لازم ffmpeg.exe يفضل جنبه في نفس الفولدر." | Out-File -Encoding utf8 pkg\اقرأني.txt
+          Compress-Archive -Path pkg\* -DestinationPath Tanzil-Compressor-win32.zip
+          Get-ChildItem dist, pkg, Tanzil-Compressor-win32.zip | Format-Table Name, Length
+      - name: test transcode
+        shell: pwsh
+        run: |
+          cd win\pkg
+          .\ffmpeg.exe -v error -y -f lavfi -i testsrc2=size=1280x720:rate=30:duration=10 -f lavfi -i sine=frequency=500:duration=10 -c:v libx264 -c:a aac in.mp4
+          foreach ($a in @(@('mp4','size','0.4'),@('mp4','quality','small'),@('mp3','size','0.1'),@('mkv','quality','high'))) {
+            $o = "out_$($a[0])_$($a[1]).$($a[0])"
+            Start-Process -FilePath .\Tanzil.exe -ArgumentList @('--cli','in.mp4',$o,$a[0],$a[1],$a[2]) -Wait -NoNewWindow
+            if (Test-Path $o) { "$o = $((Get-Item $o).Length) bytes" } else { "$o MISSING" }
+          }
+      - name: gui screenshot
+        shell: pwsh
+        run: |
+          cd win\pkg
+          $p = Start-Process -FilePath .\Tanzil.exe -PassThru
+          Start-Sleep -Seconds 6
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("$PWD\..\..\shot.png")
+          "process alive: $(-not $p.HasExited)"
+          Stop-Process -Id $p.Id -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shot
+          path: shot.png
+      - name: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.tag }}" win/Tanzil-Compressor-win32.zip win/dist/Tanzil.exe --repo "${{ github.repository }}" --title "تنزيل ضاغط الفيديو (ويندوز)" --notes "برنامج ضغط وتحويل فيديو بدون إنترنت، 32 بت، ويندوز 7 فما فوق."
