@@ -137,7 +137,7 @@ def hook(ns):
         # ---- end v3 ----
         # persistence
         d = json.load(open(T.DATA, encoding='utf-8'))
-        check('data persisted', len(d['history']) >= 1 and d['sessions'])
+        check('data persisted', d['sessions'] and d['mins'] and d['history'] == [])
     except Exception as e:
         import traceback; traceback.print_exc(); fails.append('exception %r' % e)
     finally:
