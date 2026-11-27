@@ -53,6 +53,8 @@ jobs:
           if (Test-Path $vsw) { $vsd = & $vsw -latest -products * -property installationPath; if ($vsd) { $dump = Get-ChildItem "$vsd\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Where-Object { $_.FullName -match 'Hostx64\\x64' } | Select-Object -First 1 } }
           if ($dump) {
             $imps = & $dump.FullName /dependents "$pk\Tanzil-PC.exe" | Select-String -Pattern '\.dll' | ForEach-Object { $_.Line.Trim() } | Where-Object { $_ -match '^(api-ms-win-crt|ucrtbase|vcruntime)' }
+            "DUMPBIN RAW:"; & $dump.FullName /dependents "$pk\\Tanzil-PC.exe" | Select-Object -First 40
+            "dumpbin path: $($dump.FullName)"
             "exe imports needing app-local copy: $($imps.Count)"
             $missing = @($imps | Where-Object { -not (Test-Path "$pk\$_") })
             "missing beside exe: $($missing.Count) $($missing -join ',')"
