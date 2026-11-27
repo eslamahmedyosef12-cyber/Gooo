@@ -266,9 +266,26 @@ def main(tab=0, hook=None, theme=None, size=None):
         return tk.Button(parent, text=text, command=cmd, bg=color, fg='white', activebackground='#38b57c', activeforeground='white',
                          relief='flat', font=(FONT, size, 'bold'), padx=kw.pop('bpad', 14), pady=4, cursor='hand2', **kw)
 
+    # background photo (pre-dimmed PNG so text stays readable); fails safe to a plain colour
+    art = {'img': None}
+    bg_lbl = tk.Label(root, bd=0, bg=BG)
+
+    def set_art(name):
+        try:
+            base = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            art['img'] = tk.PhotoImage(file=os.path.join(base, 'bg_%s.png' % name))
+            bg_lbl.config(image=art['img'])
+            bg_lbl.place(relx=0.5, rely=0.5, anchor='center')
+        except Exception:
+            try:
+                bg_lbl.place_forget()
+            except Exception:
+                pass
+    set_art('dark')
+
     # header
     head = tk.Frame(root, bg=BG)
-    head.pack(fill='x', pady=(8, 2))
+    head.pack(pady=(8, 2))
     L(head, 'تنزيل', 22, GRN, True).pack()
     L(head, 'مدرب الكتابة  ·  تايمر المذاكرة  ·  بدون إنترنت', 9, SUB).pack()
     tk.Frame(head, bg=ACC, height=2, width=120).pack(pady=(6, 0))
@@ -277,9 +294,9 @@ def main(tab=0, hook=None, theme=None, size=None):
     foot.pack(side='bottom', pady=4)
 
     tabs = tk.Frame(root, bg=BG)
-    tabs.pack(fill='x', padx=16, pady=(6, 4))
+    tabs.pack(fill='x', padx=30, pady=(6, 4))
     body = tk.Frame(root, bg=BG)
-    body.pack(fill='both', expand=True, padx=16)
+    body.pack(fill='both', expand=True, padx=30)
     f_type = tk.Frame(body, bg=BG)
     f_pomo = tk.Frame(body, bg=BG)
     f_stat = tk.Frame(body, bg=BG)
@@ -989,6 +1006,8 @@ def main(tab=0, hook=None, theme=None, size=None):
             b.config(bg=ACC if k == cur_tab['i'] else CARD, fg='white' if k == cur_tab['i'] else TXT)
         theme_btn.config(text='وضع داكن' if name == 'light' else 'وضع فاتح')
         cur_theme['n'] = name
+        set_art(name)
+        bg_lbl.lower()
         refresh_stats()
         cur_theme['n'] = name
 

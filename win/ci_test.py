@@ -188,6 +188,8 @@ def hook(ns):
         except ValueError:
             check('restore non-dict rejected', True)
         ns['show'](0)
+        check('bg image loaded', ns['art']['img'] is not None and ns['bg_lbl'].winfo_ismapped())
+        ns['toggle_theme'](); root.update(); check('bg image light', ns['art']['img'].width() > 100); ns['toggle_theme'](); root.update()
         # ---- end v4 ----
         # persistence
         d = json.load(open(T.DATA, encoding='utf-8'))
