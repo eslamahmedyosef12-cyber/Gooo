@@ -27,8 +27,17 @@ jobs:
           python -c "import struct;print(struct.calcsize('P')*8,'bit python')"
           pip install pyinstaller==5.13.2
           cd win
-          pyinstaller --onefile --windowed --name Tanzil-PC --icon icon.ico --add-data "icon.ico;." --splash splash.png tanzil_pc.py
-          Get-ChildItem -Recurse build -Filter *.toc | ForEach-Object { Select-String -Path $_.FullName -Pattern 'api-ms-win-crt|ucrtbase|vcruntime140|python37.dll|tcl86t' -SimpleMatch:$false | ForEach-Object { $_.Line.Trim() } } | Sort-Object -Unique | Select-Object -First 40
+          $ucrt = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\ucrt\DLLs\x86"
+          "ucrt dir exists: $(Test-Path $ucrt)"
+          $bins = @()
+          Get-ChildItem $ucrt -Filter *.dll | ForEach-Object { $bins += '--add-binary'; $bins += "$($_.FullName);." }
+          $vc = "$env:WINDIR\SysWOW64\vcruntime140.dll"
+          "vcruntime exists: $(Test-Path $vc)"
+          if (Test-Path $vc) { $bins += '--add-binary'; $bins += "$vc;." }
+          "binary args: $($bins.Count / 2)"
+          pyinstaller --onefile --windowed --name Tanzil-PC --icon icon.ico --add-data "icon.ico;." --splash splash.png @bins tanzil_pc.py
+          $n = (Get-ChildItem -Recurse build -Filter PKG-00.toc | Select-String -Pattern 'api-ms-win-crt|ucrtbase|vcruntime140' | Measure-Object).Count
+          "crt/vcruntime entries in package: $n"
           Compress-Archive -Path dist\Tanzil-PC.exe -DestinationPath Tanzil-PC-win32.zip
           Get-ChildItem dist, Tanzil-PC-win32.zip | Format-Table Name, Length
       - name: selftest
