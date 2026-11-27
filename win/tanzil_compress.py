@@ -205,7 +205,7 @@ def gui():
     root.title(APP_NAME)
     root.configure(bg=BG)
     sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
-    ww, wh = 560, min(610, sh - 70)
+    ww, wh = 560, min(640, sh - 70)
     root.geometry('%dx%d+%d+%d' % (ww, wh, max(0, (sw - ww) // 2), 5))
     root.minsize(520, 480)
     try:
@@ -315,8 +315,10 @@ def gui():
             out_lbl.config(text='هيتحفظ في: ' + p)
     tk.Button(c3, text='غيّر مكان الحفظ', command=change_out, bg=BG, fg=TXT, relief='flat', font=('Tahoma', 9)).pack(anchor='e', pady=(4, 0))
 
+    foot = tk.Label(root, text='تطوير: المصري Goo  ·  مجاني بدون إعلانات  ·  بيشتغل بدون نت', bg=BG, fg=SUB, font=('Tahoma', 8))
+    foot.pack(side='bottom', pady=6)
     c4 = tk.Frame(root, bg=BG)
-    c4.pack(fill='x', padx=16, pady=3)
+    c4.pack(side='bottom', fill='x', padx=16, pady=3)
     style = ttk.Style()
     try:
         style.theme_use('clam')
@@ -336,8 +338,6 @@ def gui():
     open_btn = tk.Button(btn_row, text='افتح المجلد', bg=CARD, fg=TXT, relief='flat', font=('Tahoma', 11), padx=12, pady=6, state='disabled')
     open_btn.pack(side='right', padx=6)
 
-    foot = tk.Label(root, text='تطوير: المصري Goo  ·  مجاني بدون إعلانات  ·  بيشتغل بدون نت', bg=BG, fg=SUB, font=('Tahoma', 8))
-    foot.pack(side='bottom', pady=6)
 
     def set_busy(b):
         st['busy'] = b
