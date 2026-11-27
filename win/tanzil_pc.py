@@ -7,6 +7,7 @@ import sys
 import time
 import threading
 import datetime
+import re
 import tkinter as tk
 
 try:
@@ -47,6 +48,8 @@ EN = [
     'Keep your desk clean, your phone away and your goal clear in front of you.',
     'Small steps taken every day lead to big results in the long run.',
 ]
+
+AR = [re.sub('[\u064b-\u0652]', '', x) for x in AR]
 
 
 def data_dir():
@@ -105,7 +108,7 @@ def beep_pattern(kind):
     threading.Thread(target=run, daemon=True).start()
 
 
-def main(tab=0):
+def main(tab=0, hook=None):
     root = tk.Tk()
     root.title(APP)
     root.configure(bg=BG)
@@ -119,7 +122,10 @@ def main(tab=0):
     except Exception:
         pass
     store = load()
-    store.setdefault('history', [])
+    if not isinstance(store.get('history'), list):
+        store['history'] = []
+    if not isinstance(store.get('sessions'), dict):
+        store['sessions'] = {}
 
     def L(parent, text, size=11, color=TXT, bold=False, **kw):
         return tk.Label(parent, text=text, bg=kw.pop('bg', BG), fg=color, font=(FONT, size, 'bold' if bold else 'normal'), **kw)
@@ -256,7 +262,7 @@ def main(tab=0):
     # ---------- pomodoro ----------
     ps = {'phase': 'work', 'left': 25 * 60, 'running': False, 'end': 0, 'job': None}
     today = datetime.date.today().isoformat()
-    sess = store.get('sessions', {})
+    sess = store['sessions']
     ph_lbl = L(f_pomo, 'وقت المذاكرة', 16, '#7fe0b0', True)
     ph_lbl.pack(pady=(14, 0))
     clock = tk.Label(f_pomo, text='25:00', bg=BG, fg=TXT, font=(FONT, 60, 'bold'))
@@ -353,6 +359,9 @@ def main(tab=0):
     refresh_hist()
     new_text()
     show(tab)
+    if hook:
+        ns = dict(locals())
+        root.after(800, lambda: hook(ns))
     root.mainloop()
 
 
