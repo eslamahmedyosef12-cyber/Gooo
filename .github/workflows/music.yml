@@ -50,10 +50,10 @@ jobs:
             F=out.mp3; M=sendAudio; FIELD=audio
           fi
           SZ=$(stat -c %s "$F")
-          if [ "$SZ" -lt 49000000 ]; then
+          if [ "$SZ" -lt 49000000 ] && [ "$CHAT" != "0" ]; then
             curl -s -m 600 "https://api.telegram.org/bot$TG/$M" -F chat_id="$CHAT" -F "$FIELD=@$F;filename=$NAME-no-music.${F##*.}" -F caption="تم حذف الموسيقى وإبقاء الصوت البشري (الكلام والغناء)." | head -c 200
           else
             N="nm-$(date +%s)-$RANDOM.${F##*.}"
             curl -s -X POST "https://dinlporwlqeoyvllhapo.supabase.co/storage/v1/object/tnzl-tmp/$N" -H "Authorization: Bearer $SBS" -H "apikey: $SBS" -H "Content-Type: application/octet-stream" --data-binary @"$F" >/dev/null
-            tg sendMessage -d chat_id="$CHAT" --data-urlencode "text=الملف كبير على تيليجرام. حمّله من هنا (بيتمسح بعد فترة): https://dinlporwlqeoyvllhapo.supabase.co/storage/v1/object/public/tnzl-tmp/$N"
+            if [ "$CHAT" = "0" ]; then echo "RESULT_OBJECT $N"; else tg sendMessage -d chat_id="$CHAT" --data-urlencode "text=الملف كبير على تيليجرام. حمّله من هنا (بيتمسح بعد فترة): https://dinlporwlqeoyvllhapo.supabase.co/storage/v1/object/public/tnzl-tmp/$N"; fi
           fi
