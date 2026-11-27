@@ -39,7 +39,27 @@ jobs:
           pyinstaller --onefile --windowed --name Tanzil-PC --icon icon.ico --add-data "icon.ico;." --add-data "bg_dark.png;." --add-data "bg_light.png;." --splash splash.png @bins tanzil_pc.py
           $n = (Get-ChildItem -Recurse build -Filter PKG-00.toc | Select-String -Pattern 'api-ms-win-crt|ucrtbase|vcruntime140' | Measure-Object).Count
           "crt/vcruntime entries in package: $n"
-          Compress-Archive -Path dist\Tanzil-PC.exe -DestinationPath Tanzil-PC-win32.zip
+          # app-local UCRT: the bootloader needs these BEFORE it can unpack anything, so they must sit beside the exe
+          $pk = "pkg\Tanzil-PC"
+          New-Item -ItemType Directory -Force $pk | Out-Null
+          Copy-Item dist\Tanzil-PC.exe $pk
+          Get-ChildItem $ucrt -Filter *.dll | ForEach-Object { Copy-Item $_.FullName $pk }
+          if (Test-Path $vc) { Copy-Item $vc $pk }
+          $rd = "الأول: فك الضغط عن المجلد كله (Extract All) وبعدين شغّل Tanzil-PC.exe من جواه. لا تشغله من داخل الـ ZIP. سيب ملفات الـ dll جنب البرنامج."
+          [System.IO.File]::WriteAllText("$pk\اقرأني.txt", $rd, (New-Object System.Text.UTF8Encoding($true)))
+          # verify: every DLL the exe imports (dumpbin) that is api-ms-win-crt-* / ucrtbase / vcruntime is present beside it
+          $vsw = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $dump = $null
+          if (Test-Path $vsw) { $vsd = & $vsw -latest -products * -property installationPath; if ($vsd) { $dump = Get-ChildItem "$vsd\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Where-Object { $_.FullName -match 'Hostx64\\x64' } | Select-Object -First 1 } }
+          if ($dump) {
+            $imps = & $dump.FullName /dependents "$pk\Tanzil-PC.exe" | Select-String -Pattern '\.dll' | ForEach-Object { $_.Line.Trim() } | Where-Object { $_ -match '^(api-ms-win-crt|ucrtbase|vcruntime)' }
+            "exe imports needing app-local copy: $($imps.Count)"
+            $missing = @($imps | Where-Object { -not (Test-Path "$pk\$_") })
+            "missing beside exe: $($missing.Count) $($missing -join ',')"
+            if ($missing.Count -gt 0) { exit 1 }
+          } else { "dumpbin not found, import check skipped" }
+          "files in package: $((Get-ChildItem $pk).Count)"
+          Compress-Archive -Path "$pk" -DestinationPath Tanzil-PC-win32.zip
           Get-ChildItem dist, Tanzil-PC-win32.zip | Format-Table Name, Length
       - name: selftest
         shell: pwsh
@@ -120,4 +140,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ inputs.tag }}" win/Tanzil-PC-win32.zip win/dist/Tanzil-PC.exe --repo "${{ github.repository }}" --title "تنزيل PC" --notes "مدرب كتابة وتايمر مذاكرة، بدون إنترنت، 32 بت."
+          gh release create "${{ inputs.tag }}" win/Tanzil-PC-win32.zip --repo "${{ github.repository }}" --title "تنزيل PC" --notes "مدرب كتابة وتايمر مذاكرة، بدون إنترنت، 32 بت."
