@@ -683,7 +683,7 @@ def main(tab=0, hook=None, theme=None, size=None):
                            selectbackground=ACC, activestyle='none', justify='right')
     task_list.pack(fill='both', expand=True, pady=4)
 
-    task_hint = L(f_tasks, 'المهمة المنجزة تظهر بعلامة [x]، وغير المنجزة بعلامة [  ]', 9, SUB)
+    task_hint = L(f_tasks, 'اختار مهمة واضغط إنجاز لتظهر عليها علامة x', 9, SUB)
     task_hint.pack()
 
     def refresh_tasks():
