@@ -1,0 +1,54 @@
+name: music-remove
+on:
+  workflow_dispatch:
+    inputs:
+      url: {description: 'input file url', required: true}
+      chat: {description: 'telegram chat id', required: true}
+      kind: {description: 'audio or video', required: true, default: 'audio'}
+      name: {description: 'output base name', required: false, default: 'result'}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TG: ${{ secrets.TG_TOKEN }}
+      SBS: ${{ secrets.SB_SERVICE }}
+      IN_URL: ${{ inputs.url }}
+      CHAT: ${{ inputs.chat }}
+      KIND: ${{ inputs.kind }}
+      NAME: ${{ inputs.name }}
+    steps:
+      - name: separate
+        run: |
+          set +e
+          tg() { curl -s -m 60 "https://api.telegram.org/bot$TG/$1" "${@:2}" >/dev/null; }
+          fail() { tg sendMessage -d chat_id="$CHAT" --data-urlencode "text=$1"; exit 0; }
+          mkdir -p w && cd w
+          curl -sL -m 600 -o in.bin "$IN_URL" || fail "تعذر تحميل الملف للمعالجة. جرّب تبعته تاني."
+          [ -s in.bin ] || fail "الملف وصل فاضي. جرّب تاني."
+          ffmpeg -v error -y -i in.bin -vn -ac 2 -ar 44100 in.wav || fail "الملف ده مفيهوش صوت أقدر أشتغل عليه."
+          DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 in.wav | cut -d. -f1)
+          [ "${DUR:-0}" -le 1800 ] || fail "الملف أطول من 30 دقيقة. ابعت ملف أقصر."
+          python -m pip install -q --upgrade pip >/dev/null 2>&1
+          python -m pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu || fail "حصلت مشكلة في تجهيز المعالجة. جرّب بعد شوية."
+          python -m pip install -q demucs soundfile || fail "حصلت مشكلة في تجهيز المعالجة. جرّب بعد شوية."
+          T0=$(date +%s)
+          python -m demucs --two-stems=vocals -n htdemucs -j 2 -o out in.wav 2>dem.log || { tail -3 dem.log; fail "فشل فصل الموسيقى لسبب فني. جرّب ملف تاني."; }
+          echo "demucs seconds: $(( $(date +%s) - T0 )) for ${DUR}s audio"
+          V=out/htdemucs/in/vocals.wav
+          [ -s "$V" ] || fail "فشل فصل الموسيقى. جرّب ملف تاني."
+          if [ "$KIND" = "video" ]; then
+            ffmpeg -v error -y -i in.bin -i "$V" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 160k -shortest -movflags +faststart out.mp4 || fail "فشل دمج الصوت مع الفيديو."
+            F=out.mp4; M=sendVideo; FIELD=video
+          else
+            ffmpeg -v error -y -i "$V" -c:a libmp3lame -b:a 192k out.mp3 || fail "فشل حفظ الصوت."
+            F=out.mp3; M=sendAudio; FIELD=audio
+          fi
+          SZ=$(stat -c %s "$F")
+          if [ "$SZ" -lt 49000000 ]; then
+            curl -s -m 600 "https://api.telegram.org/bot$TG/$M" -F chat_id="$CHAT" -F "$FIELD=@$F;filename=$NAME-no-music.${F##*.}" -F caption="تم حذف الموسيقى وإبقاء الصوت البشري (الكلام والغناء)." | head -c 200
+          else
+            N="nm-$(date +%s)-$RANDOM.${F##*.}"
+            curl -s -X POST "https://dinlporwlqeoyvllhapo.supabase.co/storage/v1/object/tnzl-tmp/$N" -H "Authorization: Bearer $SBS" -H "apikey: $SBS" -H "Content-Type: application/octet-stream" --data-binary @"$F" >/dev/null
+            tg sendMessage -d chat_id="$CHAT" --data-urlencode "text=الملف كبير على تيليجرام. حمّله من هنا (بيتمسح بعد فترة): https://dinlporwlqeoyvllhapo.supabase.co/storage/v1/object/public/tnzl-tmp/$N"
+          fi
